@@ -9,10 +9,18 @@ permissions:
   pull-requests: write
     
 jobs:
+  run-tests:
+    name: Run Tests
+    runs-on: linux
+    steps:
+      - name: Test
+        run:
+          echo "Hello World!"
+          
   all-checks-passed: 
     name: All Checks Passed 
     if: always()
-    # needs: run-tests
+    needs: run-tests
     runs-on: ubuntu-latest
     steps:
       - name: Ensure all required jobs pass successfully
