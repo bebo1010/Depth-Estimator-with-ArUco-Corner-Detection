@@ -1,7 +1,8 @@
 name: PR Checks without Testing
 on:
   pull_request:
-    branches: [main]
+    branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: write
