@@ -5,7 +5,7 @@
 - [x] Detect ArUco markers for each stream
 - [x] Compute depths with detected ArUco markers and get depth from Realsense depth stream
 
-### buttons for depth_estimator_streaming.py
+### buttons for opencv_ui_controller.py
 
 - `s` or `S` to save the images
 - `esc` to close program
@@ -21,7 +21,9 @@
 - [ ] Refactor the code to include interfaces for FLIR cameras
     - [x] Interface for intel realsense cameras
     - [ ] Interface for FLIR cameras
-- [x] Clean up the codes
+- [ ] Clean up the codes
+    - [x] Streaming UI controller
+    - [ ] Image loading UI controller
 
 ## File Structure
 
