@@ -122,3 +122,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# batch file for starting program
+*.bat
+
+# Data saved for this repository
+Db/*
