@@ -200,6 +200,8 @@ class OpenCV_UI_Controller():
             key = cv2.pollKey() & 0xFF
             if key == 27:  # ESC key
                 logging.info("Program terminated by user.")
+                self.camera_system.release()
+                cv2.destroyAllWindows()
                 break
             elif key == ord('s') or key == ord('S'):  # Save images
                 self._save_images(left_gray_image, right_gray_image, depth_image)
