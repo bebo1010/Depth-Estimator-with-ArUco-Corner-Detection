@@ -2,6 +2,7 @@ import logging
 from typing import Tuple
 import yaml
 
+import cv2
 import numpy as np
 import PySpin
 
@@ -11,7 +12,7 @@ class Flir_Camera_System(Two_Cameras_System):
     def __init__(self, config_yaml_path, master_serial_number = "21091478", slave_serial_number = "21091470"):
         super().__init__()
         
-        self.config = self._parse_yaml_config(config_yaml_path)
+        self.full_config = self._parse_yaml_config(config_yaml_path)
 
         # Get camera and nodemap
         self.system: PySpin.System = PySpin.System.GetInstance()
@@ -27,19 +28,58 @@ class Flir_Camera_System(Two_Cameras_System):
         self.slave_cam: PySpin.CameraPtr = self.cam_list.GetBySerial(slave_serial_number)
         self.slave_cam.Init()
 
+        self.image_processor = PySpin.ImageProcessor()
+        self.image_processor.SetColorProcessing(PySpin.SPINNAKER_COLOR_PROCESSING_ALGORITHM_HQ_LINEAR)
+
     def get_grayscale_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
-        # TODO: Finish implementation
-        pass
+        if not self.master_cam.IsStreaming():
+            self.master_cam.BeginAcquisition()
+        
+        if not self.slave_cam.IsStreaming():
+            self.slave_cam.BeginAcquisition()
+
+        master_serial_number = self._get_serial_number(self.master_cam)
+        slave_serial_number = self._get_serial_number(self.slave_cam)
+
+        logging.info("Reading Frame for %s...", master_serial_number)
+        master_image_result: PySpin.ImagePtr = self.master_cam.GetNextImage(1000)
+        if master_image_result.IsIncomplete():
+            logging.warning('SN %s: Image incomplete with image status %d', master_serial_number, master_image_result.GetImageStatus())
+            return False, None, None
+        else:
+            logging.info("Grabbed Frame for %s", master_serial_number)
+
+        logging.info("Reading Frame for %s...", slave_serial_number)
+        slave_image_result: PySpin.ImagePtr = self.slave_cam.GetNextImage(1000)
+        if slave_image_result.IsIncomplete():
+            logging.warning('SN %s: Image incomplete with image status %d', slave_serial_number, slave_image_result.GetImageStatus())
+            return False, None, None
+        else:
+            logging.info("Grabbed Frame for %s", slave_serial_number)
+
+        logging.info("Converting Frame for %s...", master_serial_number)
+        master_image_converted: PySpin.ImagePtr = self.image_processor.Convert(master_image_result, PySpin.PixelFormat_BayerRG8)
+        master_image_data = master_image_converted.GetNDArray()
+        master_image_data = cv2.cvtColor(master_image_data, cv2.COLOR_BayerRG2GRAY)
+        logging.info("Convertion Frame for %s done", master_serial_number)
+
+        logging.info("Converting Frame for %s...", slave_serial_number)
+        slave_image_converted: PySpin.ImagePtr = self.image_processor.Convert(slave_image_result, PySpin.PixelFormat_BayerRG8)
+        slave_image_data = slave_image_converted.GetNDArray()
+        slave_image_data = cv2.cvtColor(slave_image_data, cv2.COLOR_BayerRG2GRAY)
+        logging.info("Convertion Frame for %s done", slave_serial_number)
+
+        return True, master_image_data, slave_image_data
         
     def get_depth_image(self) -> Tuple[bool, np.ndarray]:
         # No depth image in flir camera system
         return False, None
 
     def get_width(self) -> int:
-        return int(self.config['camera_settings']['width'])
+        return int(self.full_config['camera_settings']['width'])
     
     def get_height(self) -> int:
-        return int(self.config['camera_settings']['height'])
+        return int(self.full_config['camera_settings']['height'])
     
     def release(self) -> bool:
         logging.info("Stopping master camera acquisition...")
@@ -140,11 +180,11 @@ class Flir_Camera_System(Two_Cameras_System):
         serial_number = self._get_serial_number(cam)
         logging.info(f"Configuring camera {serial_number}")
 
-        self._configure_camera_general(cam, self.config['camera_settings'])
-        self._configure_acquisition(cam, self.config['acquisition_settings'])
-        self._configure_exposure(cam, self.config['exposure_settings'])
-        self._configure_gain(cam, self.config['gain_settings'])
-        self._configure_white_balance(cam, self.config['white_balance_settings'])
+        self._configure_camera_general(cam, self.full_config['camera_settings'])
+        self._configure_acquisition(cam, self.full_config['acquisition_settings'])
+        self._configure_exposure(cam, self.full_config['exposure_settings'])
+        self._configure_gain(cam, self.full_config['gain_settings'])
+        self._configure_white_balance(cam, self.full_config['white_balance_settings'])
 
     def _configure_camera_general(self, cam: PySpin.CameraPtr, general_config: dict) -> None:
         """Configure general camera settings like width, height, offset, and pixel format."""
