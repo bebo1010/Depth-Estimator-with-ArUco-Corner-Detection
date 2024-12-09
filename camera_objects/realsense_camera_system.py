@@ -58,3 +58,7 @@ class Realsense_Camera_System(Two_Cameras_System):
     
     def get_height(self) -> int:
         return self.height
+    
+    def release(self) -> bool:
+        self.pipeline.stop()
+        return True

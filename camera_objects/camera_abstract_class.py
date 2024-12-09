@@ -22,3 +22,7 @@ class Two_Cameras_System(ABC):
     @abstractmethod
     def get_height(self) -> int:
         return
+    
+    @abstractmethod
+    def release(self) -> bool:
+        return
