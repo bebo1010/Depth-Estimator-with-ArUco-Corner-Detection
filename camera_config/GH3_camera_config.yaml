@@ -1,0 +1,31 @@
+camera_settings:
+  width: 1920
+  height: 1084
+  offset_x: 0
+  offset_y: 58
+  pixel_format: BayerRG8
+acquisition_settings:
+  fps: 179
+device_settings:
+  device_link_throughput_limit: 380160000
+exposure_settings:
+  exposure_auto: false
+  exposure_mode: Timed
+  exposure_time: 2000
+gain_settings:
+  gain_auto: 'Off'
+  gain_value: 15.0
+white_balance_settings:
+  white_balance_auto: 'Off'
+  white_balance_red_ratio: 2.0
+  white_balance_blue_ratio: 3.0
+gpio_primary:
+  trigger_mode: 'On'
+  line_selector: Line2
+  line_mode: Output
+  line_source: ExposureActive
+gpio_secondary:
+  trigger_selector: FrameStart
+  trigger_mode: 'On'
+  trigger_source: Line3
+  trigger_overlap: ReadOut
