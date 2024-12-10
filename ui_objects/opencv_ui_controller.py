@@ -6,12 +6,11 @@ import cv2
 import numpy as np
 
 from camera_objects.camera_abstract_class import Two_Cameras_System
-from camera_objects.realsense_camera_system import Realsense_Camera_System
 from aruco_detector import ArUco_Detector
 
 class OpenCV_UI_Controller():
-    def __init__(self):
-        self.base_dir = os.path.join("Db", f"Realsense_{datetime.now().strftime('%Y%m%d')}")
+    def __init__(self, system_prefix: str, focal_length: float, baseline: float):
+        self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
         self.left_ir_dir = os.path.join(self.base_dir, "left_images")
         self.right_ir_dir = os.path.join(self.base_dir, "right_images")
         self.depth_dir = os.path.join(self.base_dir, "depth_images")
@@ -28,15 +27,8 @@ class OpenCV_UI_Controller():
         self.camera_system = None
         self.ArUco_detector = ArUco_Detector()
 
-        # # Camera intrinsic parameters, should be loaded somewhere else?
-        # # D415
-        # self.focal_length = 908.36  # in pixels
-        # self.baseline = 55  # in mm
-
-        # Camera intrinsic parameters, should be loaded somewhere else?
-        # D435
-        self.focal_length = 425.203  # in pixels
-        self.baseline = 50  # in mm
+        self.focal_length = focal_length
+        self.baseline = baseline
 
     def _setup_directories(self):
         os.makedirs(self.base_dir, exist_ok=True)
@@ -205,11 +197,3 @@ class OpenCV_UI_Controller():
                 break
             elif key == ord('s') or key == ord('S'):  # Save images
                 self._save_images(left_gray_image, right_gray_image, depth_image)
-
-if __name__ == "__main__":
-    UI = OpenCV_UI_Controller()
-
-    cameras = Realsense_Camera_System()
-    UI.set_camera_system(cameras)
-
-    UI.start()
