@@ -1,6 +1,6 @@
 
-from ui_objects.opencv_ui_controller import OpenCV_UI_Controller
-from camera_objects.realsense_camera_system import Realsense_Camera_System
+from ui_objects.opencv_ui_controller import OpencvUIController
+from camera_objects.realsense_camera_system import RealsenseCameraSystem
 
 if __name__ == "__main__":
     # Camera intrinsic parameters, should be loaded somewhere else?
@@ -13,9 +13,9 @@ if __name__ == "__main__":
     # focal_length = 425.203  # in pixels
     # baseline = 50  # in mm
 
-    UI = OpenCV_UI_Controller(system_prefix="Realsense", focal_length=focal_length, baseline=baseline)
+    UI = OpencvUIController(system_prefix="Realsense", focal_length=focal_length, baseline=baseline)
 
-    cameras = Realsense_Camera_System()
+    cameras = RealsenseCameraSystem()
     UI.set_camera_system(cameras)
 
     UI.start()
