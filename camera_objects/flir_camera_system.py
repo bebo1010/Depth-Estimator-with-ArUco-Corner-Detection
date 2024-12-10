@@ -25,8 +25,14 @@ class Flir_Camera_System(Two_Cameras_System):
         self.master_cam: PySpin.CameraPtr = self.cam_list.GetBySerial(master_serial_number)
         self.master_cam.Init()
 
+        self._configure_master_camera(self.master_cam)
+
         self.slave_cam: PySpin.CameraPtr = self.cam_list.GetBySerial(slave_serial_number)
         self.slave_cam.Init()
+
+        self._configure_slave_camera(self.slave_cam)
+
+        self._disable_trigger_mode(self.master_cam)
 
         self.image_processor = PySpin.ImageProcessor()
         self.image_processor.SetColorProcessing(PySpin.SPINNAKER_COLOR_PROCESSING_ALGORITHM_HQ_LINEAR)
@@ -167,7 +173,7 @@ class Flir_Camera_System(Two_Cameras_System):
         }
         return config
 
-    def _get_serial_number(cam: PySpin.CameraPtr):
+    def _get_serial_number(self, cam: PySpin.CameraPtr) -> int:
         """Retrieve the serial number of the camera."""
         nodemap: PySpin.NodeMap = cam.GetTLDeviceNodeMap()
         serial_number_node = PySpin.CStringPtr(nodemap.GetNode('DeviceSerialNumber'))
@@ -180,11 +186,47 @@ class Flir_Camera_System(Two_Cameras_System):
         serial_number = self._get_serial_number(cam)
         logging.info(f"Configuring camera {serial_number}")
 
+        self._load_user_set(cam)
+
         self._configure_camera_general(cam, self.full_config['camera_settings'])
         self._configure_acquisition(cam, self.full_config['acquisition_settings'])
         self._configure_exposure(cam, self.full_config['exposure_settings'])
         self._configure_gain(cam, self.full_config['gain_settings'])
         self._configure_white_balance(cam, self.full_config['white_balance_settings'])
+
+    def _load_user_set(self, cam: PySpin.CameraPtr, user_set_name="Default"):
+        """
+        Load a specified user set from the camera.
+
+        Args:
+            cam (PySpin.CameraPtr): The camera object.
+            user_set_name (str): The name of the user set to load (e.g., "Default").
+        """
+        serial_number = self._get_serial_number(cam)
+        nodemap: PySpin.NodeMap = cam.GetNodeMap()
+
+        # Select the User Set
+        user_set_selector = PySpin.CEnumerationPtr(nodemap.GetNode('UserSetSelector'))
+        if not PySpin.IsReadable(user_set_selector) or not PySpin.IsWritable(user_set_selector):
+            logging.warning('User Set Selector of camera %s is not accessible', serial_number)
+            return
+
+        user_set_entry = user_set_selector.GetEntryByName(user_set_name)
+        if not PySpin.IsReadable(user_set_entry):
+            logging.warning('User Set %s of camera %s is not available', user_set_name, serial_number)
+            return
+
+        user_set_selector.SetIntValue(user_set_entry.GetValue())
+        logging.info('User Set %s of camera %s selected', user_set_name, serial_number)
+
+        # Load the User Set
+        user_set_load = PySpin.CCommandPtr(nodemap.GetNode('UserSetLoad'))
+        if not PySpin.IsWritable(user_set_load):
+            logging.warning('User Set Load of camera %s is not executable', serial_number)
+            return
+
+        user_set_load.Execute()
+        logging.info('User Set %s of camera %s loaded', user_set_name, serial_number)
 
     def _configure_camera_general(self, cam: PySpin.CameraPtr, general_config: dict) -> None:
         """Configure general camera settings like width, height, offset, and pixel format."""
@@ -288,6 +330,7 @@ class Flir_Camera_System(Two_Cameras_System):
         """Configure GPIO settings for the primary camera."""
         serial_number = self._get_serial_number(cam)
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
+        
         trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
         trigger_mode_on = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName(gpio_primary_config['trigger_mode']))
         trigger_mode.SetIntValue(trigger_mode_on.GetValue())
@@ -312,6 +355,7 @@ class Flir_Camera_System(Two_Cameras_System):
         """Configure GPIO settings for the secondary camera."""
         serial_number = self._get_serial_number(cam)
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
+
         trigger_selector = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerSelector'))
         trigger_selector_entry = PySpin.CEnumEntryPtr(trigger_selector.GetEntryByName(gpio_secondary_config['trigger_selector']))
         trigger_selector.SetIntValue(trigger_selector_entry.GetValue())
@@ -354,3 +398,21 @@ class Flir_Camera_System(Two_Cameras_System):
         trigger_mode_off = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName('Off'))
         trigger_mode.SetIntValue(trigger_mode_off.GetValue())
         logging.info('Trigger mode of camera %s is disabled', serial_number)
+
+    def _configure_master_camera(self, cam: PySpin.CameraPtr) -> None:
+        self._configure_camera(cam)
+
+        self._configure_gpio_primary(cam, self.full_config['gpio_primary'])
+
+        logging.info("Starting master camera acquisition...")
+        if not cam.IsStreaming():
+            cam.BeginAcquisition()
+
+    def _configure_slave_camera(self, cam: PySpin.CameraPtr) -> None:
+        self._configure_camera(cam)
+
+        self._configure_gpio_secondary(cam, self.full_config['gpio_secondary'])
+
+        logging.info("Starting slave camera acquisition...")
+        if not cam.IsStreaming():
+            cam.BeginAcquisition()
