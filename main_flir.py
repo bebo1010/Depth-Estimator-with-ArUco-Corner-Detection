@@ -1,5 +1,5 @@
 
-from opencv_ui_controller import OpenCV_UI_Controller
+from ui_objects.opencv_ui_controller import OpenCV_UI_Controller
 from camera_objects.flir_camera_system import Flir_Camera_System
 
 if __name__ == "__main__":
