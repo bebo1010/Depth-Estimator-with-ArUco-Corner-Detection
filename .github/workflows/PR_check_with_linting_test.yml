@@ -19,49 +19,49 @@ jobs:
     
   lint-tests:
     name: PyLint Tests
-      runs-on: ubuntu-latest
-      strategy:
-        matrix:
-          python-version: ["3.8"]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8"]
 
-      steps:
-      - name: Checkout code
-        - uses: actions/checkout@v4
+    steps:
+    - name: Checkout code
+      - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Cache Python venv
-        id: cache-python
-        uses: actions/cache@v3
-        with:
-          path: .venv  # Path to the virtual environment
-          key: ${{ runner.os }}-python-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-python-
-    
-      - name: Create venv if not cached
-        if: steps.cache-python.outputs.cache-hit != 'true'
-        run: |
-          python -m venv .venv
-          . .venv/bin/activate
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          # Install FLIR pyspin from the wheel file
-          pip install ./pyspin_wheel/spinnaker_python-4.0.0.116-cp38-cp38-win_amd64.whl
-        shell: bash
-        
-      - name: Use cached venv
-        if: steps.cache-python.outputs.cache-hit == 'true'
-        run: |
-          . .venv/bin/activate
-        shell: bash
+    - name: Cache Python venv
+      id: cache-python
+      uses: actions/cache@v3
+      with:
+        path: .venv  # Path to the virtual environment
+        key: ${{ runner.os }}-python-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-python-
+  
+    - name: Create venv if not cached
+      if: steps.cache-python.outputs.cache-hit != 'true'
+      run: |
+        python -m venv .venv
+        . .venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        # Install FLIR pyspin from the wheel file
+        pip install ./pyspin_wheel/spinnaker_python-4.0.0.116-cp38-cp38-win_amd64.whl
+      shell: bash
+      
+    - name: Use cached venv
+      if: steps.cache-python.outputs.cache-hit == 'true'
+      run: |
+        . .venv/bin/activate
+      shell: bash
 
-      - name: Analysing the code with pylint
-        run: |
-          pylint $(git ls-files '*.py')
+    - name: Analysing the code with pylint
+      run: |
+        pylint $(git ls-files '*.py')
 
   all-checks-passed: 
     name: All Checks Passed 
