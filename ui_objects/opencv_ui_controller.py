@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 
 from camera_objects.camera_abstract_class import Two_Cameras_System
-from aruco_detector import ArUco_Detector
+from aruco_detector import ArUcoDetector
 
 class OpenCV_UI_Controller():
     def __init__(self, system_prefix: str, focal_length: float, baseline: float):
@@ -25,7 +25,7 @@ class OpenCV_UI_Controller():
         self._setup_window()
 
         self.camera_system = None
-        self.ArUco_detector = ArUco_Detector()
+        self.ArUco_detector = ArUcoDetector()
 
         self.focal_length = focal_length
         self.baseline = baseline
