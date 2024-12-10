@@ -92,12 +92,11 @@ class OpencvUIController():
             _, depth_image = self.camera_system.get_depth_image()
             if not success:
                 continue
-            else:
-                matching_ids_result, matching_corners_left, matching_corners_right = \
-                    self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
-                self._display_image(left_gray_image, right_gray_image,
-                                    matching_ids_result, matching_corners_left, matching_corners_right,
-                                    depth_image)
+            matching_ids_result, matching_corners_left, matching_corners_right = \
+                self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
+            self._display_image(left_gray_image, right_gray_image,
+                                matching_ids_result, matching_corners_left, matching_corners_right,
+                                depth_image)
 
             # Check for key presses
             key = cv2.pollKey() & 0xFF
@@ -106,7 +105,7 @@ class OpencvUIController():
                 self.camera_system.release()
                 cv2.destroyAllWindows()
                 break
-            elif key == ord('s') or key == ord('S'):  # Save images
+            if key == ord('s') or key == ord('S'):  # Save images
                 self._save_images(left_gray_image, right_gray_image, depth_image)
 
     def _setup_directories(self) -> None:

@@ -93,10 +93,10 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         if not depth_frame:
             logging.error("Failed to get images from Realsense depth stream")
             return [False, None]
-        else:
-            # Convert images to numpy arrays
-            depth_image = np.asanyarray(depth_frame.get_data())
-            return [True, depth_image]
+
+        # Convert images to numpy arrays
+        depth_image = np.asanyarray(depth_frame.get_data())
+        return [True, depth_image]
     def get_width(self) -> int:
         """
         Get width for the camera system.
