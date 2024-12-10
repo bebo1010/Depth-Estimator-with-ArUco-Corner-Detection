@@ -1,15 +1,48 @@
+"""
+Module for main UI controller.
+"""
 import os
 from datetime import datetime
 import logging
+from typing import Tuple, Union
 
 import cv2
 import numpy as np
 
-from camera_objects.camera_abstract_class import Two_Cameras_System
+from camera_objects.camera_abstract_class import TwoCamerasSystem
 from aruco_detector import ArUcoDetector
 
-class OpenCV_UI_Controller():
-    def __init__(self, system_prefix: str, focal_length: float, baseline: float):
+class OpencvUIController():
+    """
+    UI controller for ArUco detection application.
+
+    Functions:
+        __init__(str, float, float) -> None
+        set_camera_system(TwoCamerasSystem) -> None
+        start() -> None
+        _setup_directories() -> None
+        _get_starting_index(str) -> int
+        _setup_logging() -> None
+        _setup_window() -> None
+        _process_data(np.ndarray, np.ndarray) -> Tuple[np.ndarray, float, float, float, int, int]
+        _draw_on_images(np.ndarray, np.ndarray, np.ndarray, 
+                        np.ndarray, np.ndarray, np.ndarray
+                        ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]
+        _get_depth_data(np.ndarray, int, int) -> float
+        _display_image(np.ndarray, np.ndarray, np.ndarray,
+                        np.ndarray, np.ndarray, Union[None, np.ndarray]) -> None
+        _save_images(np.ndarray, np.ndarray, np.ndarray) -> None
+    """
+    def __init__(self, system_prefix: str, focal_length: float, baseline: float) -> None:
+        """
+        Initialize UI controller.
+
+        args:
+        No arguments.
+
+        returns:
+        No return.
+        """
         self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
         self.left_ir_dir = os.path.join(self.base_dir, "left_images")
         self.right_ir_dir = os.path.join(self.base_dir, "right_images")
@@ -25,18 +58,83 @@ class OpenCV_UI_Controller():
         self._setup_window()
 
         self.camera_system = None
-        self.ArUco_detector = ArUcoDetector()
+        self.aruco_detector = ArUcoDetector()
 
         self.focal_length = focal_length
         self.baseline = baseline
 
-    def _setup_directories(self):
+    def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
+        """
+        Set the camera system for the application.
+
+        args:
+        No arguments.
+
+        returns:
+        No return.
+        """
+        self.camera_system = camera_system
+
+    def start(self) -> None:
+        """
+        Start the application.
+        - Press `s` or `S` to save images.
+        - Press `esc` to exit.
+
+        args:
+        No arguments.
+
+        returns:
+        No return.
+        """
+        while True:
+            success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
+            _, depth_image = self.camera_system.get_depth_image()
+            if not success:
+                continue
+            else:
+                matching_ids_result, matching_corners_left, matching_corners_right = \
+                    self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
+                self._display_image(left_gray_image, right_gray_image,
+                                    matching_ids_result, matching_corners_left, matching_corners_right,
+                                    depth_image)
+
+            # Check for key presses
+            key = cv2.pollKey() & 0xFF
+            if key == 27:  # ESC key
+                logging.info("Program terminated by user.")
+                self.camera_system.release()
+                cv2.destroyAllWindows()
+                break
+            elif key == ord('s') or key == ord('S'):  # Save images
+                self._save_images(left_gray_image, right_gray_image, depth_image)
+
+    def _setup_directories(self) -> None:
+        """
+        Make directories for storing images and logs.
+
+        args:
+        No arguments.
+
+        returns:
+        No return.
+        """
         os.makedirs(self.base_dir, exist_ok=True)
         os.makedirs(self.left_ir_dir, exist_ok=True)
         os.makedirs(self.right_ir_dir, exist_ok=True)
         os.makedirs(self.depth_dir, exist_ok=True)
 
-    def _get_starting_index(self, directory: str):
+    def _get_starting_index(self, directory: str) -> int:
+        """
+        Get the starting index for image files in the given directory.
+
+        args:
+            directory (str): The directory to search for image files.
+        
+        return:
+            int:
+                - int: The starting index for image files in the given directory.
+        """
         if not os.path.exists(directory):
             return 1
         files = [f for f in os.listdir(directory) if f.endswith(".png")]
@@ -46,7 +144,16 @@ class OpenCV_UI_Controller():
         ]
         return max(indices, default=0) + 1
 
-    def _setup_logging(self):
+    def _setup_logging(self) -> None:
+        """
+        Setup logging for the application.
+
+        args:
+        No arguments.
+
+        returns:
+        No return.
+        """
         log_path = os.path.join(self.base_dir, "aruco_depth_log.txt")
         logging.basicConfig(
             filename=log_path,
@@ -54,8 +161,17 @@ class OpenCV_UI_Controller():
             format="%(asctime)s - %(levelname)s - %(message)s",
         )
 
-    def _setup_window(self):
-        def _mouse_callback(event, x, y, flags, param):
+    def _setup_window(self) -> None:
+        """
+        Setup OpenCV window and set the mouse callback.
+
+        args:
+        No arguments.
+
+        returns:
+        No return.
+        """
+        def _mouse_callback(event, x, y, _flags, _param):
             """Update the mouse position."""
             if event == cv2.EVENT_MOUSEMOVE:
                 self.mouse_x, self.mouse_y = x, y
@@ -64,14 +180,26 @@ class OpenCV_UI_Controller():
         cv2.namedWindow("Combined View (2x2)")
         cv2.setMouseCallback("Combined View (2x2)", _mouse_callback)
 
-    def set_camera_system(self, camera_system: Two_Cameras_System):
-        self.camera_system = camera_system
-
-    def _process_data(self, matching_corners_left, matching_corners_right):
+    def _process_data(
+            self,
+            matching_corners_left: np.ndarray,
+            matching_corners_right: np.ndarray
+            ) -> Tuple[np.ndarray, float, float, float, int, int]:
         """
-        處理匹配標記的視差、深度計算以及統計數據。
-        
-        返回視差的平均值、變異數、計算的深度以及標記中心座標。
+        Calculated mean and variance of disparities
+        Calculate depth in mm, and Get the center of the markers.
+    
+        args:
+        matching_corners_left (numpy.ndarray): Corner points of the left image.
+        matching_corners_right (numpy.ndarray): Corner points of the right image.
+        returns:
+        Tuple[np.ndarray, float, float, float, int, int]:
+            - np.ndarray: Disparities between matching corners.
+            - float: Mean of disparities.
+            - float: Variance of disparities.
+            - float: Calculated depth in mm.
+            - int: Center X coordinate of the markers.
+            - int: Center Y coordinate of the markers.
         """
         disparities = np.abs(matching_corners_left[:, 0] - matching_corners_right[:, 0])
         mean_disparity = np.mean(disparities)
@@ -87,9 +215,30 @@ class OpenCV_UI_Controller():
 
         return disparities, mean_disparity, variance_disparity, depth_mm_calc, center_x, center_y
 
-    def _draw_on_images(self, left_image_colored, right_image_colored, depth_image, matching_ids_result, matching_corners_left, matching_corners_right):
+    def _draw_on_images(self,
+                        left_image_colored: np.ndarray,
+                        right_image_colored: np.ndarray,
+                        depth_image: np.ndarray,
+                        matching_ids_result: np.ndarray,
+                        matching_corners_left: np.ndarray,
+                        matching_corners_right: np.ndarray
+                        ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        在左、右影像上繪製標記ID和計算的深度。
+        Draw the detected depth and markers on the images.
+
+        args:
+        left_image_colored (numpy.ndarray): Colored image of the left camera.
+        right_image_colored (numpy.ndarray): Colored image of the right camera.
+        depth_image (numpy.ndarray): Depth image.
+        matching_ids_result (numpy.ndarray): Detected marker IDs.
+        matching_corners_left (numpy.ndarray): Detected corner points of the left image.
+        matching_corners_right (numpy.ndarray): Detected corner points of the right image.
+        
+        returns:
+        Tuple[np.ndarray, np.ndarray, np.ndarray]:
+            - np.ndarray: Drawn left image.
+            - np.ndarray: Drawn right image.
+            - np.ndarray: Drawn depth image.
         """
         if depth_image is not None:
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
@@ -110,7 +259,6 @@ class OpenCV_UI_Controller():
         for marker_id in matching_ids_result:
             disparities, mean_disparity, variance_disparity, depth_mm_calc, center_x, center_y = self._process_data(
                 matching_corners_left, matching_corners_right)
-            
             depth_mm_aruco = self._get_depth_data(depth_image, center_x, center_y)
 
             # 在左影像上顯示標記ID和深度
@@ -118,13 +266,28 @@ class OpenCV_UI_Controller():
                         (center_x, center_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
             # 記錄資訊
-            logging.info(f"Marker ID: {marker_id}, Calculated Depth: {depth_mm_calc:.2f} mm, Depth Image Depth: {depth_mm_aruco} mm, Mean Disparity: {mean_disparity:.2f}, Disparity Variance: {variance_disparity:.2f}, Disparities: {disparities.tolist()}")
+            logging.info("Marker ID: %d, Calculated Depth: %.2f mm, Depth Image Depth: %.2f mm, \
+                         Mean Disparity: %.2f, Disparity Variance: %.2f, Disparities: %s",
+                         marker_id, depth_mm_calc, depth_mm_aruco,
+                         mean_disparity, variance_disparity, disparities.tolist())
 
         return left_image_colored, right_image_colored, depth_colormap
 
-    def _get_depth_data(self, depth_image, center_x, center_y):
+    def _get_depth_data(self,
+                        depth_image: np.ndarray,
+                        center_x: int,
+                        center_y: int
+                        ) -> float:
         """
-        從深度影像獲取深度數據，並在深度影像上繪製。
+        Get depth dara from depth image.
+
+        args:
+        depth_image (np.ndarray): Depth image.
+        center_x (int): Center X coordinate of the marker.
+        center_y (int): Center Y coordinate of the marker.
+        
+        returns:
+            float: Depth data in mm from the depth image.
         """
         if depth_image is not None:
             # 獲取深度值
@@ -136,16 +299,36 @@ class OpenCV_UI_Controller():
 
         return depth_mm_img
 
-    def _display_image(self, left_gray_image, right_gray_image, matching_ids_result, matching_corners_left, matching_corners_right, depth_image=None):
+    def _display_image(self,
+                       left_gray_image: np.ndarray,
+                       right_gray_image: np.ndarray,
+                       matching_ids_result: np.ndarray,
+                       matching_corners_left: np.ndarray,
+                       matching_corners_right: np.ndarray,
+                       depth_image: Union[None, np.ndarray] = None
+                       ) -> None:
         """
-        顯示左右影像和深度影像，並繪製標記ID和深度。
+        Display the processed images on the window.
+
+        args:
+        left_gray_image (np.ndarray): Grayscale image of the left camera.
+        right_gray_image (np.ndarray): Grayscale image of the right camera.
+        matching_ids_result (np.ndarray): Detected marker IDs.
+        matching_corners_left (np.ndarray): Detected corner points of the left image.
+        matching_corners_right (np.ndarray): Detected corner points of the right image.
+        depth_image (np.ndarray): Depth image.
+
+        return:
+        No return.
         """
         # 將灰階影像轉換為彩色影像以便顯示
         left_image_colored = cv2.cvtColor(left_gray_image, cv2.COLOR_GRAY2BGR)
         right_image_colored = cv2.cvtColor(right_gray_image, cv2.COLOR_GRAY2BGR)
 
         # 在左、右影像上繪製標記ID和深度
-        left_image_colored, right_image_colored, depth_colormap = self._draw_on_images(left_image_colored, right_image_colored, depth_image, matching_ids_result, matching_corners_left, matching_corners_right) 
+        left_image_colored, right_image_colored, depth_colormap = \
+            self._draw_on_images(left_image_colored, right_image_colored, depth_image,
+                                 matching_ids_result, matching_corners_left, matching_corners_right)
 
         # 創建 2x2 視圖矩陣
         top_row = np.hstack((left_image_colored, right_image_colored))  # 合併左右影像
@@ -157,43 +340,44 @@ class OpenCV_UI_Controller():
         # 顯示最終影像
         cv2.imshow("Combined View (2x2)", combined_view)
 
-    def _save_images(self, left_gray_image, right_gray_image, depth_image = None):
+    def _save_images(self,
+                     left_gray_image: np.ndarray,
+                     right_gray_image: np.ndarray,
+                     depth_image: Union[None, np.ndarray] = None
+                     ) -> None:
+        """
+        Save the images to disk.
+
+        args:
+        left_gray_image (np.ndarray): Grayscale image of the left camera.
+        right_gray_image (np.ndarray): Grayscale image of the right camera.
+        depth_image (np.ndarray): Depth image.
+
+        return:
+        No return.
+        """
         # File paths
         left_ir_path = os.path.join(self.left_ir_dir, f"left_image{self.image_index}.png")
         right_ir_path = os.path.join(self.right_ir_dir, f"right_image{self.image_index}.png")
-        
+
         # Save images
         cv2.imwrite(left_ir_path, left_gray_image)
         cv2.imwrite(right_ir_path, right_gray_image)
-        
+
         if depth_image is not None:
             depth_png_path = os.path.join(self.depth_dir, f"depth_image{self.image_index}.png")
             depth_npy_path = os.path.join(self.depth_dir, f"depth_image{self.image_index}.npy")
             cv2.imwrite(depth_png_path, depth_image)
             np.save(depth_npy_path, depth_image)
 
-            logging.info(f"Saved images - Left IR: {left_ir_path}, Right IR: {right_ir_path}, Depth PNG: {depth_png_path}, Depth NPY: {depth_npy_path}")
+            logging.info(
+                "Saved images - Left IR: %s, Right IR: %s, Depth PNG: %s, Depth NPY: %s",
+                left_ir_path, right_ir_path, depth_png_path, depth_npy_path
+            )
         else:
-            logging.info(f"Saved images - Left IR: {left_ir_path}, Right IR: {right_ir_path}")
+            logging.info(
+                "Saved images - Left IR: %s, Right IR: %s",
+                left_ir_path, right_ir_path
+            )
 
         self.image_index += 1
-
-    def start(self):
-        while True:
-            success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
-            depth_success, depth_image = self.camera_system.get_depth_image()
-            if not success:
-                continue
-            else:
-                matching_ids_result, matching_corners_left, matching_corners_right = self.ArUco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
-                self._display_image(left_gray_image, right_gray_image, matching_ids_result, matching_corners_left, matching_corners_right, depth_image)
-
-            # Check for key presses
-            key = cv2.pollKey() & 0xFF
-            if key == 27:  # ESC key
-                logging.info("Program terminated by user.")
-                self.camera_system.release()
-                cv2.destroyAllWindows()
-                break
-            elif key == ord('s') or key == ord('S'):  # Save images
-                self._save_images(left_gray_image, right_gray_image, depth_image)
