@@ -1,4 +1,7 @@
-from typing import Tuple, List
+"""
+Module for detecting ArUco markers in images.
+"""
+from typing import Tuple
 
 import cv2
 import numpy as np
@@ -38,14 +41,13 @@ class ArUcoDetector():
             - np.ndarray: Detected IDs in image.
             - np.ndarray: Detected corner points in image.
         """
-        corners, ids, _ = cv2.aruco.detectMarkers(image,
-                                                  self.aruco_dict,
-                                                  parameters=self.parameters)
+        corners, ids, _ = cv2.aruco.detectMarkers(image, self.aruco_dict, self.parameters)
         corners = np.squeeze(np.array(corners))
         ids = np.array(ids)
         return ids, corners
-    
-    def detect_aruco_two_images(self, image_left: np.ndarray, image_right: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def detect_aruco_two_images(self,
+                                image_left: np.ndarray,
+                                image_right: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Detect ArUco markers in two images, and return matching IDs and corner points.
         
@@ -87,12 +89,9 @@ class ArUcoDetector():
                 idx_right = np.where(ids_right == marker_id)[0][0]
 
                 # 取得匹配標記的角落點
-                corners_l = corners_left[idx_left][0]  # 左影像的角落點
-                corners_r = corners_right[idx_right][0]  # 右影像的角落點
-
                 # 將匹配的角落點和ID儲存
-                matching_corners_left.append(corners_l)
-                matching_corners_right.append(corners_r)
+                matching_corners_left.append(corners_left[idx_left][0]) # 左影像的角落點
+                matching_corners_right.append(corners_right[idx_right][0]) # 右影像的角落點
                 matching_ids_result.append(marker_id)
 
             # 返回匹配的標記ID及其角落點（左影像角落點、右影像角落點）
@@ -101,6 +100,5 @@ class ArUcoDetector():
             matching_corners_right = np.squeeze(np.array(matching_corners_right))
 
             return matching_ids_result, matching_corners_left, matching_corners_right
-        else:
-            # 如果其中一張影像沒有偵測到標記，返回空列表
-            return np.array([]), np.array([]), np.array([])
+        # 如果其中一張影像沒有偵測到標記，返回空列表
+        return np.array([]), np.array([]), np.array([])

@@ -1,10 +1,13 @@
+"""
+Module for Realsense camera system.
+"""
 import logging
 from typing import Tuple
 
 import numpy as np
 import pyrealsense2 as rs
 
-from .camera_abstract_class import TwoCamerasSystem
+from camera_abstract_class import TwoCamerasSystem
 
 class RealsenseCameraSystem(TwoCamerasSystem):
     """
@@ -72,7 +75,7 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         # Convert images to numpy arrays
         ir_image_left = np.asanyarray(ir_frame_left.get_data())
         ir_image_right = np.asanyarray(ir_frame_right.get_data())
-        return [True, ir_image_left, ir_image_right]       
+        return [True, ir_image_left, ir_image_right]
     def get_depth_image(self) -> Tuple[bool, np.ndarray]:
         """
         Get depth images for the camera system.
@@ -87,7 +90,6 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         """
         frames = self.pipeline.wait_for_frames()
         depth_frame = frames.get_depth_frame()
-    
         if not depth_frame:
             logging.error("Failed to get images from Realsense depth stream")
             return [False, None]

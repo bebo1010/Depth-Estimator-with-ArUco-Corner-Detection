@@ -1,3 +1,6 @@
+"""
+Module for FLIR camera system.
+"""
 import logging
 from typing import Tuple
 import yaml
@@ -6,7 +9,7 @@ import cv2
 import numpy as np
 import PySpin
 
-from .camera_abstract_class import TwoCamerasSystem
+from camera_abstract_class import TwoCamerasSystem
 
 class FlirCameraSystem(TwoCamerasSystem):
     """
@@ -60,7 +63,7 @@ class FlirCameraSystem(TwoCamerasSystem):
         if camera_count < 2:
             logging.error("Not enough cameras, only detected %d cameras.", camera_count)
             self.system.ReleaseInstance()
-            raise Exception(f"Not enough cameras, only detected {camera_count} cameras.")
+            raise ValueError(f"Not enough cameras, only detected {camera_count} cameras.")
 
         self.master_cam: PySpin.CameraPtr = self.cam_list.GetBySerial(master_serial_number)
         self.master_cam.Init()
@@ -91,7 +94,6 @@ class FlirCameraSystem(TwoCamerasSystem):
         """
         if not self.master_cam.IsStreaming():
             self.master_cam.BeginAcquisition()
-        
         if not self.slave_cam.IsStreaming():
             self.slave_cam.BeginAcquisition()
 
@@ -157,7 +159,7 @@ class FlirCameraSystem(TwoCamerasSystem):
         int:
             - int: Width of the camera system.
         """
-        return int(self.full_config['camera_settings']['width'])  
+        return int(self.full_config['camera_settings']['width'])
     def get_height(self) -> int:
         """
         Get height for the camera system.
@@ -222,7 +224,7 @@ class FlirCameraSystem(TwoCamerasSystem):
                 return config
         except OSError:
             logging.error("Error when loading configuration file at %s", config_yaml_path)
-            logging.info(f"Fallback to default config")
+            logging.info("Fallback to default config")
             config = self._get_default_config()
             return config
         except yaml.YAMLError:
@@ -311,7 +313,7 @@ class FlirCameraSystem(TwoCamerasSystem):
             None
         """
         serial_number = self._get_serial_number(cam)
-        logging.info(f"Configuring camera {serial_number}")
+        logging.info("Configuring camera %d", serial_number)
 
         self._load_user_set(cam)
 
@@ -390,7 +392,8 @@ class FlirCameraSystem(TwoCamerasSystem):
                      self._get_serial_number(cam), general_config['offset_y'])
 
         pixel_format = PySpin.CEnumerationPtr(nodemap.GetNode('PixelFormat'))
-        pixel_format_entry: PySpin.CEnumEntryPtr = pixel_format.GetEntryByName(general_config['pixel_format'])
+        pixel_format_entry: PySpin.CEnumEntryPtr =  \
+            pixel_format.GetEntryByName(general_config['pixel_format'])
         pixel_format.SetIntValue(pixel_format_entry.GetValue())
         logging.info('Pixel format of camera %s is set to %s',
                      self._get_serial_number(cam), general_config['pixel_format'])
@@ -501,7 +504,8 @@ class FlirCameraSystem(TwoCamerasSystem):
 
         if white_balance_config['white_balance_auto'] == "Off":
             node_balance_ratio_selector = PySpin.CEnumerationPtr(nodemap.GetNode('BalanceRatioSelector'))
-            node_balance_ratio_selector_blue = PySpin.CEnumEntryPtr(node_balance_ratio_selector.GetEntryByName('Blue'))
+            node_balance_ratio_selector_blue = \
+                PySpin.CEnumEntryPtr(node_balance_ratio_selector.GetEntryByName('Blue'))
             node_balance_ratio_selector.SetIntValue(node_balance_ratio_selector_blue.GetValue())
 
             node_balance_ratio = PySpin.CFloatPtr(nodemap.GetNode('BalanceRatio'))
@@ -567,7 +571,8 @@ class FlirCameraSystem(TwoCamerasSystem):
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
 
         trigger_selector = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerSelector'))
-        trigger_selector_entry = PySpin.CEnumEntryPtr(trigger_selector.GetEntryByName(gpio_secondary_config['trigger_selector']))
+        trigger_selector_entry = \
+            PySpin.CEnumEntryPtr(trigger_selector.GetEntryByName(gpio_secondary_config['trigger_selector']))
         trigger_selector.SetIntValue(trigger_selector_entry.GetValue())
         logging.info('Trigger selector of secondary camera %s is set to %s',
                      serial_number, gpio_secondary_config['trigger_selector'])
@@ -579,19 +584,22 @@ class FlirCameraSystem(TwoCamerasSystem):
                      serial_number, gpio_secondary_config['trigger_mode'])
 
         trigger_source = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerSource'))
-        trigger_source_entry = PySpin.CEnumEntryPtr(trigger_source.GetEntryByName(gpio_secondary_config['trigger_source']))
+        trigger_source_entry = \
+            PySpin.CEnumEntryPtr(trigger_source.GetEntryByName(gpio_secondary_config['trigger_source']))
         trigger_source.SetIntValue(trigger_source_entry.GetValue())
         logging.info('Trigger source of secondary camera %s is set to %s',
                      serial_number, gpio_secondary_config['trigger_source'])
 
         trigger_overlap = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerOverlap'))
-        trigger_overlap_entry = PySpin.CEnumEntryPtr(trigger_overlap.GetEntryByName(gpio_secondary_config['trigger_overlap']))
+        trigger_overlap_entry = \
+            PySpin.CEnumEntryPtr(trigger_overlap.GetEntryByName(gpio_secondary_config['trigger_overlap']))
         trigger_overlap.SetIntValue(trigger_overlap_entry.GetValue())
         logging.info('Trigger overlap of secondary camera %s is set to %s',
                      serial_number, gpio_secondary_config['trigger_overlap'])
 
         line_selector = PySpin.CEnumerationPtr(nodemap.GetNode('LineSelector'))
-        line_selector_entry = PySpin.CEnumEntryPtr(line_selector.GetEntryByName(gpio_secondary_config['trigger_source']))
+        line_selector_entry = \
+            PySpin.CEnumEntryPtr(line_selector.GetEntryByName(gpio_secondary_config['trigger_source']))
         line_selector.SetIntValue(line_selector_entry.GetValue())
         logging.info('Line selector of secondary camera %s is set to %s',
                      serial_number, gpio_secondary_config['trigger_source'])

@@ -1,3 +1,6 @@
+"""
+    Abstract class for two cameras system.
+"""
 from abc import ABC, abstractmethod
 from typing import Tuple
 
@@ -66,7 +69,7 @@ class TwoCamerasSystem(ABC):
         int:
             - int: Width of the camera system.
         """
-        return    
+        return
     @abstractmethod
     def get_height(self) -> int:
         """
