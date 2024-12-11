@@ -44,9 +44,6 @@ class OpencvUIController():
         No return.
         """
         self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
-        self.left_ir_dir = os.path.join(self.base_dir, "left_images")
-        self.right_ir_dir = os.path.join(self.base_dir, "right_images")
-        self.depth_dir = os.path.join(self.base_dir, "depth_images")
 
         self._setup_directories()
         self.image_index = self._get_starting_index(self.left_ir_dir)
@@ -119,9 +116,14 @@ class OpencvUIController():
         No return.
         """
         os.makedirs(self.base_dir, exist_ok=True)
-        os.makedirs(self.left_ir_dir, exist_ok=True)
-        os.makedirs(self.right_ir_dir, exist_ok=True)
-        os.makedirs(self.depth_dir, exist_ok=True)
+
+        left_ir_dir = os.path.join(self.base_dir, "left_images")
+        right_ir_dir = os.path.join(self.base_dir, "right_images")
+        depth_dir = os.path.join(self.base_dir, "depth_images")
+
+        os.makedirs(left_ir_dir, exist_ok=True)
+        os.makedirs(right_ir_dir, exist_ok=True)
+        os.makedirs(depth_dir, exist_ok=True)
 
     def _get_starting_index(self, directory: str) -> int:
         """
@@ -183,7 +185,7 @@ class OpencvUIController():
             self,
             matching_corners_left: np.ndarray,
             matching_corners_right: np.ndarray
-            ) -> Tuple[np.ndarray, float, float, float, int, int]:
+            ) -> Tuple[np.ndarray, float, float, float]:
         """
         Calculated mean and variance of disparities
         Calculate depth in mm, and Get the center of the markers.
@@ -197,8 +199,6 @@ class OpencvUIController():
             - float: Mean of disparities.
             - float: Variance of disparities.
             - float: Calculated depth in mm.
-            - int: Center X coordinate of the markers.
-            - int: Center Y coordinate of the markers.
         """
         disparities = np.abs(matching_corners_left[:, 0] - matching_corners_right[:, 0])
         mean_disparity = np.mean(disparities)
@@ -209,10 +209,7 @@ class OpencvUIController():
         else:
             depth_mm_calc = 0
 
-        # 計算標記的中心點
-        center_x, center_y = np.mean(matching_corners_left, axis=0).astype(int)
-
-        return disparities, mean_disparity, variance_disparity, depth_mm_calc, center_x, center_y
+        return disparities, mean_disparity, variance_disparity, depth_mm_calc
 
     def _draw_on_images(self,
                         left_image_colored: np.ndarray,
@@ -244,25 +241,33 @@ class OpencvUIController():
 
             # Map the mouse position from IR to depth
             if 0 <= self.mouse_x < 640 and 0 <= self.mouse_y < 480:
-                depth_x = int(self.mouse_x * (self.camera_system.get_width() / 640))
-                depth_y = int(self.mouse_y * (self.camera_system.get_height() / 480))
-                depth_mm_mouse = depth_image[depth_y, depth_x]
+                depth_mm_mouse = depth_image[
+                    int(self.mouse_y * (self.camera_system.get_height() / 480)),
+                    int(self.mouse_x * (self.camera_system.get_width() / 640))
+                ]
 
-                cv2.circle(depth_colormap, (depth_x, depth_y), 5, (0, 255, 255), -1)
+                depth_coords = (
+                    int(self.mouse_x * (self.camera_system.get_width() / 640)),
+                    int(self.mouse_y * (self.camera_system.get_height() / 480))
+                )
+                cv2.circle(depth_colormap, depth_coords, 5, (0, 255, 255), -1)
                 text = f"Depth: {depth_mm_mouse} mm"
-                cv2.putText(depth_colormap, text, (depth_x + 10, depth_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                cv2.putText(depth_colormap, text, (depth_coords[0] + 10, depth_coords[1]),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
         else:
             depth_colormap = np.zeros_like(left_image_colored)
 
         for i, marker_id in enumerate(matching_ids_result):
-            disparities, mean_disparity, variance_disparity, depth_mm_calc, center_x, center_y = self._process_data(
+            center_coords = map(int, np.mean(matching_corners_left[i], axis=0))
+            disparities, mean_disparity, variance_disparity, depth_mm_calc = self._process_data(
                 matching_corners_left[i], matching_corners_right[i])
-            depth_mm_aruco = self._get_depth_data(depth_image, center_x, center_y)
+
+            depth_mm_aruco = self._get_depth_data(depth_image, *center_coords)
 
             # 在左影像上顯示標記ID和深度
             cv2.putText(left_image_colored, f"ID:{marker_id} Depth:{int(depth_mm_calc)}mm",
-                        (center_x, center_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                        tuple(center_coords), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
             # 記錄資訊
             logging.info("Marker ID: %d, Calculated Depth: %.2f mm, Depth Image Depth: %.2f mm, \
@@ -356,16 +361,20 @@ class OpencvUIController():
         No return.
         """
         # File paths
-        left_ir_path = os.path.join(self.left_ir_dir, f"left_image{self.image_index}.png")
-        right_ir_path = os.path.join(self.right_ir_dir, f"right_image{self.image_index}.png")
+        left_ir_dir = os.path.join(self.base_dir, "left_images")
+        right_ir_dir = os.path.join(self.base_dir, "right_images")
+        depth_dir = os.path.join(self.base_dir, "depth_images")
+
+        left_ir_path = os.path.join(left_ir_dir, f"left_image{self.image_index}.png")
+        right_ir_path = os.path.join(right_ir_dir, f"right_image{self.image_index}.png")
 
         # Save images
         cv2.imwrite(left_ir_path, left_gray_image)
         cv2.imwrite(right_ir_path, right_gray_image)
 
         if depth_image is not None:
-            depth_png_path = os.path.join(self.depth_dir, f"depth_image{self.image_index}.png")
-            depth_npy_path = os.path.join(self.depth_dir, f"depth_image{self.image_index}.npy")
+            depth_png_path = os.path.join(depth_dir, f"depth_image{self.image_index}.png")
+            depth_npy_path = os.path.join(depth_dir, f"depth_image{self.image_index}.npy")
             cv2.imwrite(depth_png_path, depth_image)
             np.save(depth_npy_path, depth_image)
 
