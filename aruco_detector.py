@@ -41,10 +41,9 @@ class ArUcoDetector():
             - np.ndarray: Detected IDs in image.
             - np.ndarray: Detected corner points in image.
         """
-        corners, ids, _ = cv2.aruco.detectMarkers(image, self.aruco_dict, self.parameters)
-        corners = np.squeeze(np.array(corners))
-        ids = np.array(ids)
-        return ids, corners
+        corners, ids, _ = cv2.aruco.detectMarkers(image, self.aruco_dict, parameters=self.parameters)
+        return corners, ids
+    
     def detect_aruco_two_images(self,
                                 image_left: np.ndarray,
                                 image_right: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -62,10 +61,10 @@ class ArUcoDetector():
             - np.ndarray: Matching corner points in right image.
         """
         # 偵測左影像中的Aruco標記，並提取角落點與ID
-        ids_left, corners_left = self.detect_aruco(image_left)
+        corners_left, ids_left = self.detect_aruco(image_left)
 
         # 偵測右影像中的Aruco標記，並提取角落點與ID
-        ids_right, corners_right = self.detect_aruco(image_right)
+        corners_right, ids_right = self.detect_aruco(image_right)
 
         # 檢查兩張影像是否都有偵測到標記
         if ids_left is not None and ids_right is not None:
@@ -96,8 +95,8 @@ class ArUcoDetector():
 
             # 返回匹配的標記ID及其角落點（左影像角落點、右影像角落點）
             matching_ids_result = np.array(matching_ids_result)
-            matching_corners_left = np.squeeze(np.array(matching_corners_left))
-            matching_corners_right = np.squeeze(np.array(matching_corners_right))
+            matching_corners_left = np.array(matching_corners_left)
+            matching_corners_right = np.array(matching_corners_right)
 
             return matching_ids_result, matching_corners_left, matching_corners_right
         # 如果其中一張影像沒有偵測到標記，返回空列表

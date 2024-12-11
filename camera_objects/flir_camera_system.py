@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import PySpin
 
-from camera_abstract_class import TwoCamerasSystem
+from camera_objects.camera_abstract_class import TwoCamerasSystem
 
 class FlirCameraSystem(TwoCamerasSystem):
     """
