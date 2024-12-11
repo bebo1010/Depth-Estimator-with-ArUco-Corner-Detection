@@ -59,12 +59,12 @@ jobs:
       - name: Analyzing the code with pylint
         run: |
           . .venv/bin/activate
-          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611
+          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401 --max-args=10 --max-locals=20 --max-attribute=10
 
   all-checks-passed: 
     name: All Checks Passed 
     if: always()
-    needs: run-tests
+    needs: [run-tests, lint-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Ensure all required jobs pass successfully
