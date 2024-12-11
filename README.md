@@ -4,41 +4,36 @@
 - [x] Read two Realsense IR camera streams and Realsense depth stream
 - [x] Detect ArUco markers for each stream
 - [x] Compute depths with detected ArUco markers and get depth from Realsense depth stream
+- [x] Include interfaces for other cameras
+    - [x] Interface for intel realsense cameras
+    - [x] Interface for FLIR cameras
 
 ### buttons for opencv_ui_controller.py
 
 - `s` or `S` to save the images
 - `esc` to close program
 
-### buttons for depth_estimator_images.py
-
-- `l` or `L` to load the images
-- `n` or `N` to show next image set
-- `p` or `P` to show previous image set
-- `esc` to close program
-
 ## Goal
-- [ ] Refactor the code to include interfaces for FLIR cameras
-    - [x] Interface for intel realsense cameras
-    - [ ] Interface for FLIR cameras
-- [ ] Clean up the codes
-    - [x] Streaming UI controller
-    - [ ] Image loading UI controller
+- [ ] Add support for multiple realsense cameras
 
 ## File Structure
 
 | File | Usage |
 | --- | --- |
-| `opencv_ui_controller.py` | main controller for UI |
+| `ui_objects/opencv_ui_controller.py` | main controller for UI |
 | `camera_objects/camera_abstract_class.py` | base class for all kinds of camera |
 | `camera_objects/realsense_camera_system.py` | derived class for Realsense cameras |
+| `camera_objects/flir_camera_system.py` | derived class for FLIR cameras |
+| `camera_config/GH3_camera_config.yaml` | config file for FLIR grasshopper3 cameras |
 | `aruco_detector.py` | class for detecting ArUco markers |
-| `depth_estimator_images.py` | Load the results saved before |
+| `main_flir.py` | main function for starting application with FLIR cameras |
+| `main_realsense.py` | main function for starting application with realsense camera |
+| `requirements.txt` | note for environment requirements |
 
 ```
 .
 ├── Db/
-│   └── Realsense_{Date}/
+│   └── {Camera Type}_{Date}/
 │       ├── depth_images/
 │       │   ├── depth_image1.npy
 │       │   ├── depth_image1.png
@@ -53,8 +48,14 @@
 ├── camera_objects/
 │   ├── camera_abstract_class.py
 │   └── realsense_camera_system.py
+│   └── flir_camera_system.py
+├── camera_config/
+│   ├── GH3_camera_config.yaml
+├── ui_objects/
+│   ├── opencv_ui_controller.py
 ├── aruco_detector.py
-├── opencv_ui_controller.py
-├── depth_estimator_images.py
+├── main_flir.py
+├── main_realsense.py
+├── requirements.txt
 └── README.md
 ```
