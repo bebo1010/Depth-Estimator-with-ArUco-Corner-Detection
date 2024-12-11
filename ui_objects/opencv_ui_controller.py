@@ -255,9 +255,9 @@ class OpencvUIController():
         else:
             depth_colormap = np.zeros_like(left_image_colored)
 
-        for marker_id in matching_ids_result:
+        for i, marker_id in enumerate(matching_ids_result):
             disparities, mean_disparity, variance_disparity, depth_mm_calc, center_x, center_y = self._process_data(
-                matching_corners_left, matching_corners_right)
+                matching_corners_left[i], matching_corners_right[i])
             depth_mm_aruco = self._get_depth_data(depth_image, center_x, center_y)
 
             # 在左影像上顯示標記ID和深度
