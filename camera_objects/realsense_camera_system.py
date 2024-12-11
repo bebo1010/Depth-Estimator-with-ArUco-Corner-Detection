@@ -14,19 +14,20 @@ class RealsenseCameraSystem(TwoCamerasSystem):
     Realsense camera system, inherited from TwoCamerasSystem.
 
     Functions:
-        __init__() -> None
+        __init__(int, int) -> None
         get_grayscale_images() -> Tuple[bool, np.ndarray, np.ndarray]
         get_depth_image() -> Tuple[bool, np.ndarray]
         get_width() -> int
         get_height() -> int
         release() -> bool
     """
-    def __init__(self) -> None:
+    def __init__(self, width: int, height: int) -> None:
         """
         Initialize realsense camera system.
 
         args:
-        No arguments.
+            width (int): width of realsense camera stream.
+            height (int): height of realsense camera stream.
 
         returns:
         No return.
@@ -36,8 +37,8 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         self.pipeline = rs.pipeline()
         config = rs.config()
 
-        self.width = 848
-        self.height = 480
+        self.width = width
+        self.height = height
 
         # Enable the depth and infrared streams
         config.enable_stream(rs.stream.depth, self.width, self.height,
