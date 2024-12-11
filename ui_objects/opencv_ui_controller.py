@@ -44,9 +44,10 @@ class OpencvUIController():
         No return.
         """
         self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
-
+        left_ir_dir = os.path.join(self.base_dir, "left_images")
+        
         self._setup_directories()
-        self.image_index = self._get_starting_index(self.left_ir_dir)
+        self.image_index = self._get_starting_index(left_ir_dir)
 
         self._setup_logging()
 
@@ -259,15 +260,14 @@ class OpencvUIController():
             depth_colormap = np.zeros_like(left_image_colored)
 
         for i, marker_id in enumerate(matching_ids_result):
-            center_coords = map(int, np.mean(matching_corners_left[i], axis=0))
+            center_coords = np.mean(matching_corners_left[i], axis=0).astype(int)
             disparities, mean_disparity, variance_disparity, depth_mm_calc = self._process_data(
                 matching_corners_left[i], matching_corners_right[i])
 
             depth_mm_aruco = self._get_depth_data(depth_image, *center_coords)
-
             # 在左影像上顯示標記ID和深度
             cv2.putText(left_image_colored, f"ID:{marker_id} Depth:{int(depth_mm_calc)}mm",
-                        tuple(center_coords), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                        center_coords, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
             # 記錄資訊
             logging.info("Marker ID: %d, Calculated Depth: %.2f mm, Depth Image Depth: %.2f mm, \
