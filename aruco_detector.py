@@ -43,7 +43,7 @@ class ArUcoDetector():
         """
         corners, ids, _ = cv2.aruco.detectMarkers(image, self.aruco_dict, parameters=self.parameters)
         return corners, ids
-    
+
     def detect_aruco_two_images(self,
                                 image_left: np.ndarray,
                                 image_right: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
