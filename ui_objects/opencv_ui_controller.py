@@ -45,7 +45,7 @@ class OpencvUIController():
         """
         self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
         left_ir_dir = os.path.join(self.base_dir, "left_images")
-        
+
         self._setup_directories()
         self.image_index = self._get_starting_index(left_ir_dir)
 
