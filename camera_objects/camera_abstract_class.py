@@ -35,7 +35,7 @@ class TwoCamerasSystem(ABC):
 
         args:
         No arguments.
-        
+
         returns:
         Tuple[bool, np.ndarray, np.ndarray]:
             - bool: Whether images grabbing is successful or not.
@@ -44,27 +44,28 @@ class TwoCamerasSystem(ABC):
         """
         return
     @abstractmethod
-    def get_depth_image(self) -> Tuple[bool, np.ndarray]:
+    def get_depth_image(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
         Get depth images for the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         Tuple[bool, np.ndarray]:
             - bool: Whether depth image grabbing is successful or not.
-            - np.ndarray: depth grayscale image.
+            - np.ndarray: first depth grayscale image.
+            - np.ndarray: second depth grayscale image.
         """
         return
     @abstractmethod
     def get_width(self) -> int:
         """
         Get width for the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         int:
             - int: Width of the camera system.
@@ -74,10 +75,10 @@ class TwoCamerasSystem(ABC):
     def get_height(self) -> int:
         """
         Get height for the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         int:
             - int: Height of the camera system.
@@ -87,13 +88,12 @@ class TwoCamerasSystem(ABC):
     def release(self) -> bool:
         """
         Release the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         bool:
             - bool: Whether releasing is successful or not.
         """
         return
-    

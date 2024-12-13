@@ -92,11 +92,16 @@ class DualRealsenseSystem(TwoCamerasSystem):
         returns:
         Tuple[bool, np.ndarray]:
             - bool: Whether depth image grabbing is successful or not.
-            - np.ndarray: depth grayscale image.
+            - np.ndarray: first depth grayscale image.
+            - np.ndarray: second depth grayscale image.
         """
-        # TODO: modify this function to return depth images for both cameras
-        # FIXME: this change will require modification of entire API calls
-        return self.realsense_system_list[0].get_depth_image()
+        total_success = True
+        depth_images = []
+        for realsense_camera in self.realsense_system_list:
+            success, depth_image, _ = realsense_camera.get_depth_image()
+            total_success = total_success and success
+            depth_images.append(depth_image)
+        return total_success, depth_images[0], depth_images[1]
 
     def get_width(self) -> int:
         """

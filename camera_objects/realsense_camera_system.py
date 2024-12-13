@@ -94,17 +94,18 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         returns:
         Tuple[bool, np.ndarray]:
             - bool: Whether depth image grabbing is successful or not.
-            - np.ndarray: depth grayscale image.
+            - np.ndarray: first depth grayscale image.
+            - np.ndarray: second depth grayscale image.
         """
         frames = self.pipeline.wait_for_frames()
         depth_frame = frames.get_depth_frame()
         if not depth_frame:
             logging.error("Failed to get images from Realsense depth stream")
-            return [False, None]
+            return False, None, None
 
         # Convert images to numpy arrays
         depth_image = np.asanyarray(depth_frame.get_data())
-        return [True, depth_image]
+        return True, depth_image, None
 
     def get_width(self) -> int:
         """
