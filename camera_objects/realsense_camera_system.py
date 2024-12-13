@@ -2,7 +2,7 @@
 Module for Realsense camera system.
 """
 import logging
-from typing import Tuple, Union
+from typing import Tuple, Optional
 
 import numpy as np
 import pyrealsense2 as rs
@@ -21,7 +21,7 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         get_height() -> int
         release() -> bool
     """
-    def __init__(self, width: int, height: int, serial_number: Union[None, str] = None) -> None:
+    def __init__(self, width: int, height: int, serial_number: Optional[str] = None) -> None:
         """
         Initialize realsense camera system.
 
