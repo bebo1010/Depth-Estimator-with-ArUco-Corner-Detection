@@ -2,7 +2,7 @@
 Module for Realsense camera system.
 """
 import logging
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 import pyrealsense2 as rs
@@ -14,20 +14,22 @@ class RealsenseCameraSystem(TwoCamerasSystem):
     Realsense camera system, inherited from TwoCamerasSystem.
 
     Functions:
-        __init__(int, int) -> None
+        __init__(int, int, int) -> None
         get_grayscale_images() -> Tuple[bool, np.ndarray, np.ndarray]
         get_depth_image() -> Tuple[bool, np.ndarray]
         get_width() -> int
         get_height() -> int
         release() -> bool
     """
-    def __init__(self, width: int, height: int) -> None:
+    def __init__(self, width: int, height: int, serial_number: Optional[str] = None) -> None:
         """
         Initialize realsense camera system.
 
         args:
             width (int): width of realsense camera stream.
             height (int): height of realsense camera stream.
+            serial_number (str, optional): serial number of the realsense camera. \
+                Connect to the first realsense camera if not provided.
 
         returns:
         No return.
@@ -36,6 +38,9 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         # Configure the RealSense pipeline
         self.pipeline = rs.pipeline()
         config = rs.config()
+
+        if serial_number is not None:
+            config.enable_device(serial_number)
 
         self.width = width
         self.height = height
@@ -50,13 +55,14 @@ class RealsenseCameraSystem(TwoCamerasSystem):
 
         # Start the pipeline
         self.pipeline.start(config)
+
     def get_grayscale_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
         Get grayscale images for both camera.
 
         args:
         No arguments.
-        
+
         returns:
         Tuple[bool, np.ndarray, np.ndarray]:
             - bool: Whether images grabbing is successful or not.
@@ -77,13 +83,14 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         ir_image_left = np.asanyarray(ir_frame_left.get_data())
         ir_image_right = np.asanyarray(ir_frame_right.get_data())
         return [True, ir_image_left, ir_image_right]
+
     def get_depth_image(self) -> Tuple[bool, np.ndarray]:
         """
         Get depth images for the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         Tuple[bool, np.ndarray]:
             - bool: Whether depth image grabbing is successful or not.
@@ -98,41 +105,43 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         # Convert images to numpy arrays
         depth_image = np.asanyarray(depth_frame.get_data())
         return [True, depth_image]
+
     def get_width(self) -> int:
         """
         Get width for the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         int:
             - int: Width of the camera system.
         """
         return self.width
+
     def get_height(self) -> int:
         """
         Get height for the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         int:
             - int: Height of the camera system.
         """
         return self.height
+
     def release(self) -> bool:
         """
         Release the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         bool:
             - bool: Whether releasing is successful or not.
         """
         self.pipeline.stop()
         return True
-    
