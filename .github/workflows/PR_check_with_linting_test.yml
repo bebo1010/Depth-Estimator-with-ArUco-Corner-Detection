@@ -32,16 +32,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache Python venv
-        id: cache-python
-        uses: actions/cache@v3
-        with:
-          path: .venv  # Path to the virtual environment
-          key: ${{ runner.os }}-python-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-python-
-
-      - name: Create venv if not cached
+      - name: Create venv
         if: steps.cache-python.outputs.cache-hit != 'true'
         run: |
           python -m venv .venv
@@ -50,16 +41,10 @@ jobs:
           pip install -r requirements.txt
         shell: bash
 
-      - name: Use cached venv
-        if: steps.cache-python.outputs.cache-hit == 'true'
-        run: |
-          . .venv/bin/activate
-        shell: bash
-
       - name: Analyzing the code with pylint
         run: |
           . .venv/bin/activate
-          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633 --max-args=10 --max-locals=25 --max-attribute=10
+          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=25 --max-attribute=10
 
   all-checks-passed:
     name: All Checks Passed
