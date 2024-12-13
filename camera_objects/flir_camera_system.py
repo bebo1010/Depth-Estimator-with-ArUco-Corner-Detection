@@ -85,7 +85,7 @@ class FlirCameraSystem(TwoCamerasSystem):
 
         args:
         No arguments.
-        
+
         returns:
         Tuple[bool, np.ndarray, np.ndarray]:
             - bool: Whether images grabbing is successful or not.
@@ -137,24 +137,25 @@ class FlirCameraSystem(TwoCamerasSystem):
     def get_depth_image(self) -> Tuple[bool, np.ndarray]:
         """
         Get depth images for the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         Tuple[bool, np.ndarray]:
             - bool: Whether depth image grabbing is successful or not.
-            - np.ndarray: depth grayscale image.
+            - np.ndarray: first depth grayscale image.
+            - np.ndarray: second depth grayscale image.
         """
         # No depth image in flir camera system
-        return False, None
+        return False, None, None
     def get_width(self) -> int:
         """
         Get width for the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         int:
             - int: Width of the camera system.
@@ -163,10 +164,10 @@ class FlirCameraSystem(TwoCamerasSystem):
     def get_height(self) -> int:
         """
         Get height for the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         int:
             - int: Height of the camera system.
@@ -175,10 +176,10 @@ class FlirCameraSystem(TwoCamerasSystem):
     def release(self) -> bool:
         """
         Release the camera system.
-        
+
         args:
         No arguments.
-        
+
         returns:
         bool:
             - bool: Whether releasing is successful or not.
@@ -209,10 +210,10 @@ class FlirCameraSystem(TwoCamerasSystem):
     def _parse_yaml_config(self, config_yaml_path: str) -> dict:
         """
         Parse configuration file for flir camera system.
-        
+
         args:
         config_yaml_path (str): path to config file.
-        
+
         returns:
         dict:
             - dict: dictionary of full configs.
@@ -236,10 +237,10 @@ class FlirCameraSystem(TwoCamerasSystem):
         """
         Get default configuration file for flir camera system.
         Default config is for grasshopper3 cameras
-        
+
         args:
         No arguments.
-        
+
         returns:
         dict:
             - dict: dictionary of full configs.
