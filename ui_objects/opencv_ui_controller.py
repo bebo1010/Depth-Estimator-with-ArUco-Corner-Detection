@@ -89,14 +89,15 @@ class OpencvUIController():
         """
         while True:
             success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
-            _, depth_image = self.camera_system.get_depth_image()
+            _, first_depth_image, second_depth_image = self.camera_system.get_depth_image()
+            # TODO: Modify depth image log
             if not success:
                 continue
             matching_ids_result, matching_corners_left, matching_corners_right = \
                 self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
             self._display_image(left_gray_image, right_gray_image,
                                 matching_ids_result, matching_corners_left, matching_corners_right,
-                                depth_image)
+                                first_depth_image, second_depth_image)
 
             # Check for key presses
             key = cv2.pollKey() & 0xFF
@@ -106,7 +107,7 @@ class OpencvUIController():
                 cv2.destroyAllWindows()
                 break
             if key == ord('s') or key == ord('S'):  # Save images
-                self._save_images(left_gray_image, right_gray_image, depth_image)
+                self._save_images(left_gray_image, right_gray_image, first_depth_image, second_depth_image)
 
     def _setup_directories(self) -> None:
         """
@@ -260,18 +261,15 @@ class OpencvUIController():
             np.ndarray: Depth image with drawn depth data.
         """
         mouse_x, mouse_y = mouse_coords
-        depth_value = depth_image[int(mouse_y * (self.camera_system.get_height() / 480)),
-                                  int(mouse_x * (self.camera_system.get_width() / 640))]
+        scaled_x = int(mouse_x * (self.camera_system.get_width() / 640))
+        scaled_y = int(mouse_y * (self.camera_system.get_height() / 480))
 
-        depth_coords = (
-            int(mouse_x * (self.camera_system.get_width() / 640)),
-            int(mouse_y * (self.camera_system.get_height() / 480))
-        )
+        depth_value = depth_image[scaled_y, scaled_x]
 
-        cv2.circle(depth_colormap, depth_coords, 5, (0, 255, 255), -1)
+        cv2.circle(depth_colormap, (scaled_x, scaled_y), 5, (0, 255, 255), -1)
         text = f"Depth: {depth_value} mm"
-        cv2.putText(depth_colormap, text, (depth_coords[0] + 10, depth_coords[1]),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+        cv2.putText(depth_colormap, text, (scaled_x + 10, scaled_y),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
         return depth_colormap
 
@@ -281,7 +279,8 @@ class OpencvUIController():
                        matching_ids_result: np.ndarray,
                        matching_corners_left: np.ndarray,
                        matching_corners_right: np.ndarray,
-                       depth_image: Optional[np.ndarray] = None) -> None:
+                       first_depth_image: Optional[np.ndarray] = None,
+                       second_depth_image: Optional[np.ndarray] = None) -> None:
         """
         Display the processed images on the window.
 
@@ -291,7 +290,8 @@ class OpencvUIController():
             matching_ids_result (np.ndarray): Detected marker IDs.
             matching_corners_left (np.ndarray): Detected corner points of the left image.
             matching_corners_right (np.ndarray): Detected corner points of the right image.
-            depth_image (Optional[np.ndarray]): Depth image.
+            first_depth_image (Optional[np.ndarray]): First depth image.
+            second_depth_image (Optional[np.ndarray]): Second depth image.
 
         Returns:
             None.
@@ -299,14 +299,17 @@ class OpencvUIController():
         left_colored = cv2.cvtColor(left_gray_image, cv2.COLOR_GRAY2BGR)
         right_colored = cv2.cvtColor(right_gray_image, cv2.COLOR_GRAY2BGR)
 
-        depth_colormap = np.zeros_like(left_colored) if depth_image is None else \
-            cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+        first_depth_colormap = np.zeros_like(left_colored) if first_depth_image is None else \
+            cv2.applyColorMap(cv2.convertScaleAbs(first_depth_image, alpha=0.03), cv2.COLORMAP_JET)
+
+        second_depth_colormap = np.zeros_like(left_colored) if second_depth_image is None else \
+            cv2.applyColorMap(cv2.convertScaleAbs(second_depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
         for i, marker_id in enumerate(matching_ids_result):
             center_coords = tuple(np.mean(matching_corners_left[i], axis=0).astype(int))
             disparities, mean_disparity, variance_disparity, depth_mm_calc, depth_mm_from_image = \
                 self._process_disparity_and_depth(matching_corners_left[i], matching_corners_right[i],
-                                                  depth_image, center_coords)
+                                                  first_depth_image, center_coords)
 
             left_colored = self._draw_on_gray_image(left_colored, marker_id, center_coords, depth_mm_calc)
 
@@ -316,27 +319,40 @@ class OpencvUIController():
                          marker_id, depth_mm_calc, depth_mm_from_image,
                          mean_disparity, variance_disparity, disparities.tolist())
 
-        if depth_image is not None and 0 <= self.mouse_x < 640 and 0 <= self.mouse_y < 480:
-            depth_colormap = self._draw_on_depth_image(depth_image, depth_colormap, (self.mouse_x, self.mouse_y))
+        if 0 <= self.mouse_y < 480:
+            if 0 <= self.mouse_x < 640:
+                depth_coord = (self.mouse_x, self.mouse_y)
+            elif 640 <= self.mouse_x < 1280:
+                depth_coord = (self.mouse_x - 640, self.mouse_y)
+            else:
+                depth_coord = (0, 0)
+
+            if first_depth_image is not None:
+                first_depth_colormap = self._draw_on_depth_image(first_depth_image, first_depth_colormap, depth_coord)
+
+            if second_depth_image is not None:
+                second_depth_colormap = self._draw_on_depth_image(second_depth_image, second_depth_colormap, depth_coord)
 
         top_row = np.hstack((left_colored, right_colored))
-        bottom_row = np.hstack((depth_colormap, np.zeros_like(depth_colormap)))
+        bottom_row = np.hstack((first_depth_colormap, second_depth_colormap))
         combined_view = np.vstack((cv2.resize(top_row, (1280, 480)), cv2.resize(bottom_row, (1280, 480))))
 
         cv2.imshow("Combined View (2x2)", combined_view)
 
     def _save_images(self,
-                     left_gray_image: np.ndarray,
-                     right_gray_image: np.ndarray,
-                     depth_image: Optional[np.ndarray] = None
-                     ) -> None:
+                    left_gray_image: np.ndarray,
+                    right_gray_image: np.ndarray,
+                    first_depth_image: Optional[np.ndarray] = None,
+                    second_depth_image: Optional[np.ndarray] = None
+                    ) -> None:
         """
         Save the images to disk.
 
         args:
         left_gray_image (np.ndarray): Grayscale image of the left camera.
         right_gray_image (np.ndarray): Grayscale image of the right camera.
-        depth_image (np.ndarray): Depth image.
+        first_depth_image (np.ndarray): First depth image.
+        second_depth_image (np.ndarray): Second depth image.
 
         return:
         No return.
@@ -346,27 +362,44 @@ class OpencvUIController():
         right_ir_dir = os.path.join(self.base_dir, "right_images")
         depth_dir = os.path.join(self.base_dir, "depth_images")
 
+        # Paths for left and right images
         left_ir_path = os.path.join(left_ir_dir, f"left_image{self.image_index}.png")
         right_ir_path = os.path.join(right_ir_dir, f"right_image{self.image_index}.png")
 
-        # Save images
+        # Save the left and right grayscale images
         cv2.imwrite(left_ir_path, left_gray_image)
         cv2.imwrite(right_ir_path, right_gray_image)
 
-        if depth_image is not None:
-            depth_png_path = os.path.join(depth_dir, f"depth_image{self.image_index}.png")
-            depth_npy_path = os.path.join(depth_dir, f"depth_image{self.image_index}.npy")
-            cv2.imwrite(depth_png_path, depth_image)
-            np.save(depth_npy_path, depth_image)
+        log_message = [
+            f"Saved images - Left IR: {left_ir_path}, Right IR: {right_ir_path}"
+        ]
 
-            logging.info(
-                "Saved images - Left IR: %s, Right IR: %s, Depth PNG: %s, Depth NPY: %s",
-                left_ir_path, right_ir_path, depth_png_path, depth_npy_path
-            )
-        else:
-            logging.info(
-                "Saved images - Left IR: %s, Right IR: %s",
-                left_ir_path, right_ir_path
-            )
+        # Handle first depth image
+        if first_depth_image is not None:
+            depth_png_path_1 = os.path.join(depth_dir, f"depth_image1_{self.image_index}.png")
+            depth_npy_path_1 = os.path.join(depth_dir, f"depth_image1_{self.image_index}.npy")
+            cv2.imwrite(depth_png_path_1, first_depth_image)
+            np.save(depth_npy_path_1, first_depth_image)
 
+            log_message.extend([
+                f"Depth PNG 1: {depth_png_path_1}",
+                f"Depth NPY 1: {depth_npy_path_1}"
+            ])
+
+        # Handle second depth image
+        if second_depth_image is not None:
+            depth_png_path_2 = os.path.join(depth_dir, f"depth_image2_{self.image_index}.png")
+            depth_npy_path_2 = os.path.join(depth_dir, f"depth_image2_{self.image_index}.npy")
+            cv2.imwrite(depth_png_path_2, second_depth_image)
+            np.save(depth_npy_path_2, second_depth_image)
+
+            log_message.extend([
+                f"Depth PNG 2: {depth_png_path_2}",
+                f"Depth NPY 2: {depth_npy_path_2}"
+            ])
+
+        # Log all the saved paths
+        logging.info(", ".join(log_message))
+
+        # Increment image index
         self.image_index += 1
