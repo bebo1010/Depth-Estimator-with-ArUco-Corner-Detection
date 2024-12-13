@@ -310,9 +310,10 @@ class OpencvUIController():
 
             left_colored = self._draw_on_gray_image(left_colored, marker_id, center_coords, depth_mm_calc)
 
-            logging.info("Marker ID: %d, Calculated Depth: %.2f mm, Depth Image Depth: %s mm"
+            depth_mm_from_image = str(depth_mm_from_image) if depth_mm_from_image is not None else "N/A"
+            logging.info("Marker ID: %d, Calculated Depth: %.2f mm, Depth Image Depth: %s mm, "
                          "Mean Disparity: %.2f, Variance: %.2f, Disparities: %s",
-                         marker_id, depth_mm_calc, str(depth_mm_from_image) if depth_mm_from_image is not None else "N/A",
+                         marker_id, depth_mm_calc, depth_mm_from_image,
                          mean_disparity, variance_disparity, disparities.tolist())
 
         if depth_image is not None and 0 <= self.mouse_x < 640 and 0 <= self.mouse_y < 480:
