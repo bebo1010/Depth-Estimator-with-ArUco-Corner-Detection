@@ -90,7 +90,6 @@ class OpencvUIController():
         while True:
             success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
             _, first_depth_image, second_depth_image = self.camera_system.get_depth_image()
-            # TODO: Modify depth image log
             if not success:
                 continue
             matching_ids_result, matching_corners_left, matching_corners_right = \
@@ -331,7 +330,8 @@ class OpencvUIController():
                 first_depth_colormap = self._draw_on_depth_image(first_depth_image, first_depth_colormap, depth_coord)
 
             if second_depth_image is not None:
-                second_depth_colormap = self._draw_on_depth_image(second_depth_image, second_depth_colormap, depth_coord)
+                second_depth_colormap = self._draw_on_depth_image(second_depth_image,
+                                                                  second_depth_colormap, depth_coord)
 
         top_row = np.hstack((left_colored, right_colored))
         bottom_row = np.hstack((first_depth_colormap, second_depth_colormap))
