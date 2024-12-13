@@ -28,7 +28,8 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         args:
             width (int): width of realsense camera stream.
             height (int): height of realsense camera stream.
-            serial_number (str, optional): serial number of the realsense camera. Connect to the first realsense camera if not provided.
+            serial_number (str, optional): serial number of the realsense camera. \
+                Connect to the first realsense camera if not provided.
 
         returns:
         No return.

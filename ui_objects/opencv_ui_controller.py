@@ -191,7 +191,9 @@ class OpencvUIController():
                                      center_coords: Optional[Tuple[int, int]] = None
                                      ) -> Tuple[np.ndarray, float, float, float, Optional[float]]:
         """
-        Calculate disparities, mean, variance, and depth from matching corners. Optionally include depth from depth image.
+        Calculate disparities, mean, variance, and depth from matching corners.
+
+        Optionally include depth from depth image.
 
         Args:
             matching_corners_left (np.ndarray): Corner points of the left image.
@@ -308,7 +310,7 @@ class OpencvUIController():
 
             left_colored = self._draw_on_gray_image(left_colored, marker_id, center_coords, depth_mm_calc)
 
-            logging.info("Marker ID: %d, Calculated Depth: %.2f mm, Depth Image Depth: %s mm, \n"
+            logging.info("Marker ID: %d, Calculated Depth: %.2f mm, Depth Image Depth: %s mm"
                          "Mean Disparity: %.2f, Variance: %.2f, Disparities: %s",
                          marker_id, depth_mm_calc, str(depth_mm_from_image) if depth_mm_from_image is not None else "N/A",
                          mean_disparity, variance_disparity, disparities.tolist())
