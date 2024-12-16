@@ -10,6 +10,8 @@
 
 ### buttons for opencv_ui_controller.py
 
+- `h` or `H` to show horizontal lines
+- `v` or `V` to show vertical lines
 - `s` or `S` to save the images
 - `esc` to close program
 

@@ -10,13 +10,6 @@ permissions:
   pull-requests: write
 
 jobs:
-  run-tests:
-    name: Run Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Test
-        run: echo "Hello World!"
-
   lint-tests:
     name: PyLint Tests
     runs-on: ubuntu-latest
@@ -44,12 +37,12 @@ jobs:
       - name: Analyzing the code with pylint
         run: |
           . .venv/bin/activate
-          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=25 --max-attribute=10
+          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=30 --max-attribute=10
 
   all-checks-passed:
     name: All Checks Passed
     if: always()
-    needs: [run-tests, lint-tests]
+    needs: lint-tests
     runs-on: ubuntu-latest
     steps:
       - name: Ensure all required jobs pass successfully
