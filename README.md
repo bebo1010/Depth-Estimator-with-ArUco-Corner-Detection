@@ -29,11 +29,18 @@ To be added.....
 | `camera_objects/realsense_camera_system.py` | derived class for Realsense cameras |
 | `camera_objects/flir_camera_system.py` | derived class for FLIR cameras |
 | `camera_config/GH3_camera_config.yaml` | config file for FLIR grasshopper3 cameras |
+| `camera_config/ORYX_camera_config.yaml` | config file for FLIR ORYX cameras |
 | `aruco_detector.py` | class for detecting ArUco markers |
 | `main_dual_realsense.py` | main function for starting application with two realsense cameras |
 | `main_flir.py` | main function for starting application with FLIR cameras |
 | `main_realsense.py` | main function for starting application with realsense camera |
 | `requirements.txt` | note for environment requirements |
+
+> [!NOTE]
+> config for ORYX cameras are custom made, as the trigger lines can be connected differently.
+
+> [!WARNING]
+> config for ORYX cameras are still untested, require further testing to make sure it works.
 
 ```
 .
