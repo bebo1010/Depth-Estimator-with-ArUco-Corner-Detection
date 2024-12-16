@@ -10,13 +10,6 @@ permissions:
   pull-requests: write
 
 jobs:
-  run-tests:
-    name: Run Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Test
-        run: echo "Hello World!"
-
   lint-tests:
     name: PyLint Tests
     runs-on: ubuntu-latest
@@ -49,7 +42,7 @@ jobs:
   all-checks-passed:
     name: All Checks Passed
     if: always()
-    needs: [run-tests, lint-tests]
+    needs: lint-tests
     runs-on: ubuntu-latest
     steps:
       - name: Ensure all required jobs pass successfully
