@@ -1,4 +1,4 @@
-name: PR Checks without Testing
+name: PR Checks with Linting Tests
 
 on:
   pull_request:
