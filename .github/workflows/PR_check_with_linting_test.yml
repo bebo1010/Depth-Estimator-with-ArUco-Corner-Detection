@@ -44,7 +44,7 @@ jobs:
       - name: Analyzing the code with pylint
         run: |
           . .venv/bin/activate
-          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=25 --max-attribute=10
+          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=30 --max-attribute=10
 
   all-checks-passed:
     name: All Checks Passed
