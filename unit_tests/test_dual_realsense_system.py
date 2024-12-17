@@ -1,11 +1,12 @@
 """
 Unit tests for the DualRealsenseSystem class.
 """
-
+import logging
 import unittest
 from unittest.mock import MagicMock, patch
+
 import numpy as np
-import logging
+
 from camera_objects.dual_realsense_system import DualRealsenseSystem
 from camera_objects.realsense_camera_system import RealsenseCameraSystem
 
@@ -14,12 +15,16 @@ class TestDualRealsenseSystem(unittest.TestCase):
     Test suite for the DualRealsenseSystem class.
     """
 
-    @patch('camera_objects.realsense_camera_system.rs.pipeline')
-    def setUp(self, mock_pipeline):
+    def setUp(self):
         """
         Set up the test environment before each test.
         """
         logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
+
+        # Patch rs.pipeline
+        patcher = patch('camera_objects.realsense_camera_system.rs.pipeline')
+        self.addCleanup(patcher.stop)
+        self.mock_pipeline = patcher.start()
 
         # Mock the RealsenseCameraSystem instances
         self.mock_camera1 = MagicMock(spec=RealsenseCameraSystem)
