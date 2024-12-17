@@ -1,11 +1,9 @@
 """
 Module for Realsense camera system.
 """
-import logging
-from typing import Tuple, List
+from typing import Tuple
 
 import numpy as np
-import pyrealsense2 as rs
 
 from camera_objects.camera_abstract_class import TwoCamerasSystem
 from camera_objects.realsense_camera_system import RealsenseCameraSystem
