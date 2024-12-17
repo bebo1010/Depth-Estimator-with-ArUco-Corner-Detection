@@ -1,3 +1,8 @@
+"""
+This module provides utility functions for file operations,
+such as determining the starting index for image files in a directory.
+"""
+
 import os
 
 def get_starting_index(directory: str) -> int:
