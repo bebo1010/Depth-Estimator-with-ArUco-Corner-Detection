@@ -1,11 +1,9 @@
 """
 Module for Realsense camera system.
 """
-import logging
-from typing import Tuple, List
+from typing import Tuple
 
 import numpy as np
-import pyrealsense2 as rs
 
 from camera_objects.camera_abstract_class import TwoCamerasSystem
 from camera_objects.realsense_camera_system import RealsenseCameraSystem
@@ -15,54 +13,35 @@ class DualRealsenseSystem(TwoCamerasSystem):
     Realsense camera system, inherited from TwoCamerasSystem.
 
     Functions:
-        __init__(int, int) -> None
+        __init__(RealsenseCameraSystem, RealsenseCameraSystem) -> None
         get_grayscale_images() -> Tuple[bool, np.ndarray, np.ndarray]
         get_depth_image() -> Tuple[bool, np.ndarray]
         get_width() -> int
         get_height() -> int
         release() -> bool
     """
-    def __init__(self, width: int, height: int) -> None:
+    def __init__(self, camera1: RealsenseCameraSystem, camera2: RealsenseCameraSystem) -> None:
         """
-        Initialize realsense camera system.
+        Initialize dual realsense camera system.
 
         args:
-            width (int): width of realsense camera stream.
-            height (int): height of realsense camera stream.
+            camera1 (RealsenseCameraSystem): First realsense camera system.
+            camera2 (RealsenseCameraSystem): Second realsense camera system.
 
         returns:
         No return.
         """
         super().__init__()
 
-        self.width = width
-        self.height = height
+        self.camera1 = camera1
+        self.camera2 = camera2
 
-        # Configure the RealSense pipeline
-        # Create a context object. This object manages all connected devices
-        context = rs.context()
-
-        # Get a list of all connected devices
-        connected_devices = context.query_devices()
-
-        if len(connected_devices) < 2:
-            logging.error("Not enough cameras, only detected %d cameras.", len(connected_devices))
-            raise ValueError(f"Not enough cameras, only detected {len(connected_devices)} cameras.")
-
-        self.realsense_system_list: List[RealsenseCameraSystem] = []
-
-        # List all connected cameras with their serial numbers
-        for i, device in enumerate(connected_devices):
-            device_name = device.get_info(rs.camera_info.name)
-            serial_number = device.get_info(rs.camera_info.serial_number)
-            logging.info("Connected RealSense device %s: %s, Serial Number: %s", i, device_name, serial_number)
-
-            realsense_camera = RealsenseCameraSystem(width, height, serial_number)
-            self.realsense_system_list.append(realsense_camera)
+        self.width = camera1.get_width()
+        self.height = camera1.get_height()
 
     def get_grayscale_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
-        Get grayscale images for both camera.
+        Get grayscale images for both cameras.
 
         args:
         No arguments.
@@ -73,16 +52,13 @@ class DualRealsenseSystem(TwoCamerasSystem):
             - np.ndarray: grayscale image for left camera.
             - np.ndarray: grayscale image for right camera.
         """
-        total_success = True
-        left_images = []
-        for realsense_camera in self.realsense_system_list:
-            success, left_image, _ = realsense_camera.get_grayscale_images()
-            total_success = total_success and success
-            left_images.append(left_image)
+        success1, left_image1, _ = self.camera1.get_grayscale_images()
+        success2, left_image2, _ = self.camera2.get_grayscale_images()
 
-        return total_success, left_images[0], left_images[1]
+        total_success = success1 and success2
+        return total_success, left_image1, left_image2
 
-    def get_depth_image(self) -> Tuple[bool, np.ndarray]:
+    def get_depth_image(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
         Get depth images for the camera system.
 
@@ -95,13 +71,11 @@ class DualRealsenseSystem(TwoCamerasSystem):
             - np.ndarray: first depth grayscale image.
             - np.ndarray: second depth grayscale image.
         """
-        total_success = True
-        depth_images = []
-        for realsense_camera in self.realsense_system_list:
-            success, depth_image, _ = realsense_camera.get_depth_image()
-            total_success = total_success and success
-            depth_images.append(depth_image)
-        return total_success, depth_images[0], depth_images[1]
+        success1, depth_image1, _ = self.camera1.get_depth_image()
+        success2, depth_image2, _ = self.camera2.get_depth_image()
+
+        total_success = success1 and success2
+        return total_success, depth_image1, depth_image2
 
     def get_width(self) -> int:
         """
@@ -115,6 +89,7 @@ class DualRealsenseSystem(TwoCamerasSystem):
             - int: Width of the camera system.
         """
         return self.width
+
     def get_height(self) -> int:
         """
         Get height for the camera system.
@@ -127,6 +102,7 @@ class DualRealsenseSystem(TwoCamerasSystem):
             - int: Height of the camera system.
         """
         return self.height
+
     def release(self) -> bool:
         """
         Release the camera system.
@@ -138,6 +114,6 @@ class DualRealsenseSystem(TwoCamerasSystem):
         bool:
             - bool: Whether releasing is successful or not.
         """
-        for realsense_camera in self.realsense_system_list:
-            realsense_camera.release()
+        self.camera1.release()
+        self.camera2.release()
         return True

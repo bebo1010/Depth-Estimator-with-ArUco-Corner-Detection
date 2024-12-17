@@ -134,7 +134,7 @@ class FlirCameraSystem(TwoCamerasSystem):
         logging.info("Convertion Frame for %s done", slave_serial_number)
 
         return True, master_image_data, slave_image_data
-    def get_depth_image(self) -> Tuple[bool, np.ndarray]:
+    def get_depth_image(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
         Get depth images for the camera system.
 

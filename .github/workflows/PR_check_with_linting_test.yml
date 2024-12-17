@@ -1,4 +1,4 @@
-name: PR Checks with Linting Tests
+name: PR Checks with Linting Tests and Unit Tests
 
 on:
   pull_request:
@@ -39,10 +39,39 @@ jobs:
           . .venv/bin/activate
           pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=30 --max-attribute=10
 
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8"]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Create venv
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+        shell: bash
+
+      - name: Run unit tests
+        run: |
+          . .venv/bin/activate
+          python -m unittest discover -s unit_tests
+        shell: bash
+
   all-checks-passed:
     name: All Checks Passed
     if: always()
-    needs: lint-tests
+    needs: [lint-tests, unit-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Ensure all required jobs pass successfully

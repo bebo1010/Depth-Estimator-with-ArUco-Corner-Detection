@@ -39,6 +39,10 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         self.pipeline = rs.pipeline()
         config = rs.config()
 
+        logging.info("Initializing Realsense camera system with width: %d, height: %d", width, height)
+        if serial_number is not None:
+            logging.info("Using Realsense camera with serial number: %s", serial_number)
+
         if serial_number is not None:
             config.enable_device(serial_number)
 
@@ -54,7 +58,9 @@ class RealsenseCameraSystem(TwoCamerasSystem):
                             rs.format.y8, 30)  # Right IR (Y8)
 
         # Start the pipeline
+        logging.info("Starting the Realsense pipeline")
         self.pipeline.start(config)
+        logging.info("Realsense pipeline started successfully")
 
     def get_grayscale_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
@@ -69,6 +75,7 @@ class RealsenseCameraSystem(TwoCamerasSystem):
             - np.ndarray: left grayscale image.
             - np.ndarray: right grayscale image.
         """
+        logging.info("Grabbing grayscale images from Realsense camera")
         frames = self.pipeline.wait_for_frames()
         ir_frame_left = frames.get_infrared_frame(1)  # Left IR
         ir_frame_right = frames.get_infrared_frame(2)  # Right IR
@@ -79,12 +86,13 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         if not ir_frame_right:
             logging.error("Failed to get images from Realsense right IR stream")
             return [False, None, None]
+        logging.info("Successfully grabbed grayscale images from Realsense camera")
         # Convert images to numpy arrays
         ir_image_left = np.asanyarray(ir_frame_left.get_data())
         ir_image_right = np.asanyarray(ir_frame_right.get_data())
         return [True, ir_image_left, ir_image_right]
 
-    def get_depth_image(self) -> Tuple[bool, np.ndarray]:
+    def get_depth_image(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
         Get depth images for the camera system.
 
@@ -97,12 +105,13 @@ class RealsenseCameraSystem(TwoCamerasSystem):
             - np.ndarray: first depth grayscale image.
             - np.ndarray: second depth grayscale image.
         """
+        logging.info("Grabbing depth image from Realsense camera")
         frames = self.pipeline.wait_for_frames()
         depth_frame = frames.get_depth_frame()
         if not depth_frame:
             logging.error("Failed to get images from Realsense depth stream")
             return False, None, None
-
+        logging.info("Successfully grabbed depth image from Realsense camera")
         # Convert images to numpy arrays
         depth_image = np.asanyarray(depth_frame.get_data())
         return True, depth_image, None
@@ -144,5 +153,7 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         bool:
             - bool: Whether releasing is successful or not.
         """
+        logging.info("Releasing the Realsense camera system")
         self.pipeline.stop()
+        logging.info("Realsense camera system released successfully")
         return True

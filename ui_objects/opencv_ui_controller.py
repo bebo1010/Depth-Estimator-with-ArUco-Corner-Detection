@@ -10,7 +10,8 @@ import cv2
 import numpy as np
 
 from camera_objects.camera_abstract_class import TwoCamerasSystem
-from aruco_detector import ArUcoDetector
+from aruco_detector.aruco_detector import ArUcoDetector
+from utils.file_utils import get_starting_index
 
 class OpencvUIController():
     """
@@ -21,7 +22,6 @@ class OpencvUIController():
         set_camera_system(TwoCamerasSystem) -> None
         start() -> None
         _setup_directories() -> None
-        _get_starting_index(str) -> int
         _setup_logging() -> None
         _setup_window() -> None
         _process_disparity_and_depth(np.ndarray, np.ndarray,
@@ -49,7 +49,7 @@ class OpencvUIController():
         left_ir_dir = os.path.join(self.base_dir, "left_images")
 
         self._setup_directories()
-        self.image_index = self._get_starting_index(left_ir_dir)
+        self.image_index = get_starting_index(left_ir_dir)
 
         self._setup_logging()
 
