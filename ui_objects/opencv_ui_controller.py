@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 
 from camera_objects.camera_abstract_class import TwoCamerasSystem
-from aruco_detector import ArUcoDetector
+from aruco_detector.aruco_detector import ArUcoDetector
 
 class OpencvUIController():
     """
