@@ -1,15 +1,14 @@
 """
-Unit tests for the OpencvUIController class.
+Unit tests for the file_utils module.
 """
 
 import unittest
-import os
 from unittest.mock import patch
-from ui_objects.opencv_ui_controller import OpencvUIController
+from utils.file_utils import get_starting_index
 
-class TestOpencvUIController(unittest.TestCase):
+class TestFileUtils(unittest.TestCase):
     """
-    Test suite for the OpencvUIController class.
+    Test suite for the file_utils module.
     """
 
     @patch('os.path.exists')
@@ -21,10 +20,9 @@ class TestOpencvUIController(unittest.TestCase):
         # Setup
         mock_exists.return_value = True
         mock_listdir.return_value = ['image1.png', 'image2.png', 'image10.png']
-        controller = OpencvUIController('test_prefix', 1.0, 1.0)
 
         # Test
-        starting_index = controller._get_starting_index('some_directory')
+        starting_index = get_starting_index('some_directory')
 
         # Assert
         self.assertEqual(starting_index, 11)
@@ -36,10 +34,9 @@ class TestOpencvUIController(unittest.TestCase):
         """
         # Setup
         mock_exists.return_value = False
-        controller = OpencvUIController('test_prefix', 1.0, 1.0)
 
         # Test
-        starting_index = controller._get_starting_index('some_directory')
+        starting_index = get_starting_index('some_directory')
 
         # Assert
         self.assertEqual(starting_index, 1)
