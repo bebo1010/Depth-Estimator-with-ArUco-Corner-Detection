@@ -1,10 +1,11 @@
 """
 Main function to start the application with Realsense camera system.
 """
+import pyrealsense2 as rs
+
 from ui_objects.opencv_ui_controller import OpencvUIController
 from camera_objects.dual_realsense_system import DualRealsenseSystem
 from camera_objects.realsense_camera_system import RealsenseCameraSystem
-import pyrealsense2 as rs
 
 if __name__ == "__main__":
     # D415
