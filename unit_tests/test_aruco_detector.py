@@ -1,10 +1,21 @@
+"""
+Unit tests for the ArUcoDetector class.
+"""
+
 import unittest
 import numpy as np
 import cv2
 from aruco_detector.aruco_detector import ArUcoDetector
 
 class TestArUcoDetector(unittest.TestCase):
+    """
+    Test suite for the ArUcoDetector class.
+    """
+
     def setUp(self):
+        """
+        Set up the test environment before each test.
+        """
         self.detector = ArUcoDetector()
         # Create a dummy image with ArUco markers for testing
         self.image = np.full((200, 200), fill_value=255, dtype=np.uint8)
@@ -12,12 +23,18 @@ class TestArUcoDetector(unittest.TestCase):
         self.image[50:150, 50:150] = marker  # Place the marker in the center with a white border
 
     def test_detect_aruco(self):
+        """
+        Test detection of a single ArUco marker.
+        """
         _, ids = self.detector.detect_aruco(self.image)
         self.assertIsNotNone(ids)
         self.assertEqual(len(ids), 1)
         self.assertEqual(ids[0], 0)
 
     def test_detect_aruco_two_images(self):
+        """
+        Test detection of ArUco markers in two images.
+        """
         # Create another dummy image with the same ArUco marker
         image_right = np.full((200, 200), fill_value=255, dtype=np.uint8)
         marker_right = cv2.aruco.generateImageMarker(self.detector.aruco_dict, 0, 100)
