@@ -84,7 +84,7 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         ir_image_right = np.asanyarray(ir_frame_right.get_data())
         return [True, ir_image_left, ir_image_right]
 
-    def get_depth_image(self) -> Tuple[bool, np.ndarray]:
+    def get_depth_image(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
         Get depth images for the camera system.
 
