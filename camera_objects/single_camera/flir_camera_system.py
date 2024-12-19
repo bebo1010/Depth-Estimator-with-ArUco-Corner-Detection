@@ -10,6 +10,7 @@ import numpy as np
 import PySpin
 
 from camera_objects.single_camera.single_camera_system import SingleCameraSystem
+from utils.file_utils import parse_yaml_config
 
 class FlirCameraSystem(SingleCameraSystem):
     """
@@ -22,7 +23,6 @@ class FlirCameraSystem(SingleCameraSystem):
         get_width() -> int
         get_height() -> int
         release() -> bool
-        _parse_yaml_config(str) -> dict
         _get_default_config() -> dict
         _get_serial_number(PySpin.CameraPtr) -> int
         _configure_camera(cam: PySpin.CameraPtr) -> None
@@ -46,13 +46,16 @@ class FlirCameraSystem(SingleCameraSystem):
         Initialize FLIR camera system.
 
         args:
-        No arguments.
+        config_yaml_path (str): path to config file.
+        serial_number (str): serial number of the camera.
 
         returns:
         No return.
         """
         super().__init__()
-        self.full_config = self._parse_yaml_config(config_yaml_path)
+        self.full_config = parse_yaml_config(config_yaml_path)
+        if self.full_config is None:
+            self.full_config = self._get_default_config()
 
         # Get camera and nodemap
         self.system: PySpin.System = PySpin.System.GetInstance()
@@ -173,32 +176,6 @@ class FlirCameraSystem(SingleCameraSystem):
         logging.info("System released.")
 
         return True
-    def _parse_yaml_config(self, config_yaml_path: str) -> dict:
-        """
-        Parse configuration file for flir camera system.
-
-        args:
-        config_yaml_path (str): path to config file.
-
-        returns:
-        dict:
-            - dict: dictionary of full configs.
-        """
-        try:
-            with open(config_yaml_path, 'r', encoding="utf-8") as file:
-                config = yaml.safe_load(file)
-                logging.info("Configuration file at %s successfully loaded", config_yaml_path)
-                return config
-        except OSError:
-            logging.error("Error when loading configuration file at %s", config_yaml_path)
-            logging.info("Fallback to default config")
-            config = self._get_default_config()
-            return config
-        except yaml.YAMLError:
-            logging.error("Error when parsing yaml in %s", config_yaml_path)
-            logging.info("Fallback to default config")
-            config = self._get_default_config()
-            return config
     def _get_default_config(self) -> dict:
         """
         Get default configuration file for flir camera system.

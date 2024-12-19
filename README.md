@@ -26,6 +26,7 @@
         - [ ] FLIR camera system
     - [x] Utility functions
         - [x] `get_starting_index()`
+        - [x] `parse_yaml_config()`
 
 ## File Structure
 
