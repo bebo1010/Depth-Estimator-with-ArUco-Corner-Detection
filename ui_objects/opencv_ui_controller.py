@@ -9,7 +9,7 @@ from typing import Tuple, Optional
 import cv2
 import numpy as np
 
-from camera_objects.camera_abstract_class import TwoCamerasSystem
+from camera_objects.two_cameras.two_cameras_system import TwoCamerasSystem
 from aruco_detector.aruco_detector import ArUcoDetector
 from utils.file_utils import get_starting_index
 
@@ -92,7 +92,7 @@ class OpencvUIController():
         """
         while True:
             success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
-            _, first_depth_image, second_depth_image = self.camera_system.get_depth_image()
+            _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
             if not success:
                 continue
             matching_ids_result, matching_corners_left, matching_corners_right = \
