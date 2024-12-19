@@ -3,33 +3,32 @@ Module for FLIR camera system.
 """
 import logging
 from typing import Tuple
-import yaml
 
 import cv2
 import numpy as np
 import PySpin
 
-from camera_objects.camera_abstract_class import TwoCamerasSystem
+from camera_objects.single_camera.single_camera_system import SingleCameraSystem
+from utils.file_utils import parse_yaml_config
 
-class FlirCameraSystem(TwoCamerasSystem):
+class FlirCameraSystem(SingleCameraSystem):
     """
-    FLIR camera system, inherited from TwoCamerasSystem.
+    FLIR camera system, inherited from SingleCameraSystem.
 
     Functions:
         __init__() -> None
-        get_grayscale_images() -> Tuple[bool, np.ndarray, np.ndarray]
+        get_grayscale_image() -> Tuple[bool, np.ndarray]
         get_depth_image() -> Tuple[bool, np.ndarray]
         get_width() -> int
         get_height() -> int
         release() -> bool
-        _parse_yaml_config(str) -> dict
         _get_default_config() -> dict
         _get_serial_number(PySpin.CameraPtr) -> int
         _configure_camera(cam: PySpin.CameraPtr) -> None
         _load_user_set(PySpin.CameraPtr, str) -> None
         _configure_camera_general(PySpin.CameraPtr, dict) -> None
         _configure_acquisition(PySpin.CameraPtr, dict) -> None
-        _configure_exposure(PySpin.CameraPtrdict) -> None
+        _configure_exposure(PySpin.CameraPtr, dict) -> None
         _configure_gain(PySpin.CameraPtr, dict) -> None
         _configure_white_balance(PySpin.CameraPtr, dict) -> None
         _configure_gpio_primary(PySpin.CameraPtr, dict) -> None
@@ -41,100 +40,77 @@ class FlirCameraSystem(TwoCamerasSystem):
     """
     def __init__(self,
                  config_yaml_path,
-                 master_serial_number = "21091478",
-                 slave_serial_number = "21091470"):
+                 serial_number = "21091478"):
         """
         Initialize FLIR camera system.
 
         args:
-        No arguments.
+        config_yaml_path (str): path to config file.
+        serial_number (str): serial number of the camera.
 
         returns:
         No return.
         """
         super().__init__()
-        self.full_config = self._parse_yaml_config(config_yaml_path)
+        self.full_config = parse_yaml_config(config_yaml_path)
+        if self.full_config is None:
+            self.full_config = self._get_default_config()
 
         # Get camera and nodemap
         self.system: PySpin.System = PySpin.System.GetInstance()
         self.cam_list: PySpin.CameraList = self.system.GetCameras()
 
         camera_count = self.cam_list.GetSize()
-        if camera_count < 2:
-            logging.error("Not enough cameras, only detected %d cameras.", camera_count)
+        if camera_count < 1:
+            logging.error("No cameras detected.")
             self.system.ReleaseInstance()
-            raise ValueError(f"Not enough cameras, only detected {camera_count} cameras.")
+            raise ValueError("No cameras detected.")
 
-        self.master_cam: PySpin.CameraPtr = self.cam_list.GetBySerial(master_serial_number)
-        self.master_cam.Init()
+        self.cam: PySpin.CameraPtr = self.cam_list.GetBySerial(serial_number)
+        self.cam.Init()
 
-        self._configure_master_camera(self.master_cam)
+        self._configure_camera(self.cam)
 
-        self.slave_cam: PySpin.CameraPtr = self.cam_list.GetBySerial(slave_serial_number)
-        self.slave_cam.Init()
-
-        self._configure_slave_camera(self.slave_cam)
-
-        self._disable_trigger_mode(self.master_cam)
+        self._disable_trigger_mode(self.cam)
 
         self.image_processor = PySpin.ImageProcessor()
         self.image_processor.SetColorProcessing(PySpin.SPINNAKER_COLOR_PROCESSING_ALGORITHM_HQ_LINEAR)
-    def get_grayscale_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
+    def get_grayscale_image(self) -> Tuple[bool, np.ndarray]:
         """
-        Get grayscale images for both camera.
+        Get grayscale image for the camera.
 
         args:
         No arguments.
 
         returns:
-        Tuple[bool, np.ndarray, np.ndarray]:
-            - bool: Whether images grabbing is successful or not.
-            - np.ndarray: left grayscale image.
-            - np.ndarray: right grayscale image.
+        Tuple[bool, np.ndarray]:
+            - bool: Whether image grabbing is successful or not.
+            - np.ndarray: grayscale image.
         """
-        if not self.master_cam.IsStreaming():
-            self.master_cam.BeginAcquisition()
-        if not self.slave_cam.IsStreaming():
-            self.slave_cam.BeginAcquisition()
+        if not self.cam.IsStreaming():
+            self.cam.BeginAcquisition()
 
-        master_serial_number = self._get_serial_number(self.master_cam)
-        slave_serial_number = self._get_serial_number(self.slave_cam)
+        serial_number = self._get_serial_number(self.cam)
 
-        logging.info("Reading Frame for %s...", master_serial_number)
-        master_image_result: PySpin.ImagePtr = self.master_cam.GetNextImage(1000)
-        if master_image_result.IsIncomplete():
+        logging.info("Reading Frame for %s...", serial_number)
+        image_result: PySpin.ImagePtr = self.cam.GetNextImage(1000)
+        if image_result.IsIncomplete():
             logging.warning('SN %s: Image incomplete with image status %d',
-                            master_serial_number,
-                            master_image_result.GetImageStatus())
-            return False, None, None
+                            serial_number,
+                            image_result.GetImageStatus())
+            return False, None
 
-        logging.info("Grabbed Frame for %s", master_serial_number)
+        logging.info("Grabbed Frame for %s", serial_number)
 
-        logging.info("Reading Frame for %s...", slave_serial_number)
-        slave_image_result: PySpin.ImagePtr = self.slave_cam.GetNextImage(1000)
-        if slave_image_result.IsIncomplete():
-            logging.warning('SN %s: Image incomplete with image status %d',
-                            slave_serial_number,
-                            slave_image_result.GetImageStatus())
-            return False, None, None
-        logging.info("Grabbed Frame for %s", slave_serial_number)
+        logging.info("Converting Frame for %s...", serial_number)
+        image_converted: PySpin.ImagePtr =  \
+            self.image_processor.Convert(image_result, PySpin.PixelFormat_BayerRG8)
+        image_data = image_converted.GetNDArray()
+        image_data = cv2.cvtColor(image_data, cv2.COLOR_BayerRG2GRAY)
+        logging.info("Convertion Frame for %s done", serial_number)
 
-        logging.info("Converting Frame for %s...", master_serial_number)
-        master_image_converted: PySpin.ImagePtr =  \
-            self.image_processor.Convert(master_image_result, PySpin.PixelFormat_BayerRG8)
-        master_image_data = master_image_converted.GetNDArray()
-        master_image_data = cv2.cvtColor(master_image_data, cv2.COLOR_BayerRG2GRAY)
-        logging.info("Convertion Frame for %s done", master_serial_number)
-
-        logging.info("Converting Frame for %s...", slave_serial_number)
-        slave_image_converted: PySpin.ImagePtr =  \
-            self.image_processor.Convert(slave_image_result, PySpin.PixelFormat_BayerRG8)
-        slave_image_data = slave_image_converted.GetNDArray()
-        slave_image_data = cv2.cvtColor(slave_image_data, cv2.COLOR_BayerRG2GRAY)
-        logging.info("Convertion Frame for %s done", slave_serial_number)
-
-        return True, master_image_data, slave_image_data
-    def get_depth_image(self) -> Tuple[bool, np.ndarray, np.ndarray]:
+        return True, image_data
+    def get_depth_image(self) -> Tuple[bool, np.ndarray]:
         """
         Get depth images for the camera system.
 
@@ -144,11 +120,10 @@ class FlirCameraSystem(TwoCamerasSystem):
         returns:
         Tuple[bool, np.ndarray]:
             - bool: Whether depth image grabbing is successful or not.
-            - np.ndarray: first depth grayscale image.
-            - np.ndarray: second depth grayscale image.
+            - np.ndarray: depth grayscale image.
         """
         # No depth image in flir camera system
-        return False, None, None
+        return False, None
     def get_width(self) -> int:
         """
         Get width for the camera system.
@@ -184,19 +159,12 @@ class FlirCameraSystem(TwoCamerasSystem):
         bool:
             - bool: Whether releasing is successful or not.
         """
-        logging.info("Stopping master camera acquisition...")
-        self.master_cam.EndAcquisition()
+        logging.info("Stopping camera acquisition...")
+        self.cam.EndAcquisition()
 
-        logging.info("Stopping slave camera acquisition...")
-        self.slave_cam.EndAcquisition()
-
-        logging.info("Releasing master camera...")
-        self.master_cam.DeInit()
-        logging.info("Master camera released.")
-
-        logging.info("Releasing slave camera...")
-        self.slave_cam.DeInit()
-        logging.info("Slave camera released.")
+        logging.info("Releasing camera...")
+        self.cam.DeInit()
+        logging.info("Camera released.")
 
         logging.info("Clearing camera list...")
         self.cam_list.Clear()
@@ -207,32 +175,6 @@ class FlirCameraSystem(TwoCamerasSystem):
         logging.info("System released.")
 
         return True
-    def _parse_yaml_config(self, config_yaml_path: str) -> dict:
-        """
-        Parse configuration file for flir camera system.
-
-        args:
-        config_yaml_path (str): path to config file.
-
-        returns:
-        dict:
-            - dict: dictionary of full configs.
-        """
-        try:
-            with open(config_yaml_path, 'r', encoding="utf-8") as file:
-                config = yaml.safe_load(file)
-                logging.info("Configuration file at %s successfully loaded", config_yaml_path)
-                return config
-        except OSError:
-            logging.error("Error when loading configuration file at %s", config_yaml_path)
-            logging.info("Fallback to default config")
-            config = self._get_default_config()
-            return config
-        except yaml.YAMLError:
-            logging.error("Error when parsing yaml in %s", config_yaml_path)
-            logging.info("Fallback to default config")
-            config = self._get_default_config()
-            return config
     def _get_default_config(self) -> dict:
         """
         Get default configuration file for flir camera system.
@@ -314,7 +256,7 @@ class FlirCameraSystem(TwoCamerasSystem):
             None
         """
         serial_number = self._get_serial_number(cam)
-        logging.info("Configuring camera %d", serial_number)
+        logging.info("Configuring camera %s", serial_number)
 
         self._load_user_set(cam)
 
@@ -636,37 +578,3 @@ class FlirCameraSystem(TwoCamerasSystem):
         trigger_mode_off = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName('Off'))
         trigger_mode.SetIntValue(trigger_mode_off.GetValue())
         logging.info('Trigger mode of camera %s is disabled', serial_number)
-    def _configure_master_camera(self, cam: PySpin.CameraPtr) -> None:
-        """
-        Configure settings for master camera.
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
-
-        Returns:
-            None
-        """
-        self._configure_camera(cam)
-
-        self._configure_gpio_primary(cam, self.full_config['gpio_primary'])
-
-        logging.info("Starting master camera acquisition...")
-        if not cam.IsStreaming():
-            cam.BeginAcquisition()
-    def _configure_slave_camera(self, cam: PySpin.CameraPtr) -> None:
-        """
-        Configure settings for slave camera.
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
-
-        Returns:
-            None
-        """
-        self._configure_camera(cam)
-
-        self._configure_gpio_secondary(cam, self.full_config['gpio_secondary'])
-
-        logging.info("Starting slave camera acquisition...")
-        if not cam.IsStreaming():
-            cam.BeginAcquisition()

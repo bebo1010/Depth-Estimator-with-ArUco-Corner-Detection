@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-from camera_objects.realsense_camera_system import RealsenseCameraSystem
+from camera_objects.two_cameras.realsense_camera_system import RealsenseCameraSystem
 
 class TestRealsenseCameraSystem(unittest.TestCase):
     """
@@ -20,7 +20,7 @@ class TestRealsenseCameraSystem(unittest.TestCase):
         logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
 
         # Patch rs.pipeline
-        patcher = patch('camera_objects.realsense_camera_system.rs.pipeline')
+        patcher = patch('camera_objects.two_cameras.realsense_camera_system.rs.pipeline')
         self.addCleanup(patcher.stop)
         self.mock_pipeline = patcher.start().return_value
 
@@ -73,7 +73,7 @@ class TestRealsenseCameraSystem(unittest.TestCase):
         mock_frames.get_depth_frame.return_value = mock_depth_frame
         self.mock_pipeline.wait_for_frames.return_value = mock_frames
 
-        success, depth_image, _ = self.camera_system.get_depth_image()
+        success, depth_image, _ = self.camera_system.get_depth_images()
         self.assertTrue(success)
         self.assertIsNotNone(depth_image)
 
@@ -85,7 +85,7 @@ class TestRealsenseCameraSystem(unittest.TestCase):
         mock_frames.get_depth_frame.return_value = None
         self.mock_pipeline.wait_for_frames.return_value = mock_frames
 
-        success, depth_image, _ = self.camera_system.get_depth_image()
+        success, depth_image, _ = self.camera_system.get_depth_images()
         self.assertFalse(success)
         self.assertIsNone(depth_image)
 

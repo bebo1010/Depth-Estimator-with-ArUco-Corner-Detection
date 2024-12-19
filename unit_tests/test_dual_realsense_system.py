@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from camera_objects.dual_realsense_system import DualRealsenseSystem
-from camera_objects.realsense_camera_system import RealsenseCameraSystem
+from camera_objects.two_cameras.dual_realsense_system import DualRealsenseSystem
+from camera_objects.two_cameras.realsense_camera_system import RealsenseCameraSystem
 
 class TestDualRealsenseSystem(unittest.TestCase):
     """
@@ -22,7 +22,7 @@ class TestDualRealsenseSystem(unittest.TestCase):
         logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
 
         # Patch rs.pipeline
-        patcher = patch('camera_objects.realsense_camera_system.rs.pipeline')
+        patcher = patch('camera_objects.two_cameras.realsense_camera_system.rs.pipeline')
         self.addCleanup(patcher.stop)
         self.mock_pipeline = patcher.start()
 
@@ -73,10 +73,10 @@ class TestDualRealsenseSystem(unittest.TestCase):
         """
         Test successful retrieval of depth images from both cameras.
         """
-        self.mock_camera1.get_depth_image.return_value = (True, np.zeros((480, 640), dtype=np.uint16), None)
-        self.mock_camera2.get_depth_image.return_value = (True, np.zeros((480, 640), dtype=np.uint16), None)
+        self.mock_camera1.get_depth_images.return_value = (True, np.zeros((480, 640), dtype=np.uint16), None)
+        self.mock_camera2.get_depth_images.return_value = (True, np.zeros((480, 640), dtype=np.uint16), None)
 
-        success, depth_image1, depth_image2 = self.camera_system.get_depth_image()
+        success, depth_image1, depth_image2 = self.camera_system.get_depth_images()
         self.assertTrue(success)
         self.assertIsNotNone(depth_image1)
         self.assertIsNotNone(depth_image2)
@@ -85,10 +85,10 @@ class TestDualRealsenseSystem(unittest.TestCase):
         """
         Test failure to retrieve depth images from both cameras.
         """
-        self.mock_camera1.get_depth_image.return_value = (False, None, None)
-        self.mock_camera2.get_depth_image.return_value = (False, None, None)
+        self.mock_camera1.get_depth_images.return_value = (False, None, None)
+        self.mock_camera2.get_depth_images.return_value = (False, None, None)
 
-        success, depth_image1, depth_image2 = self.camera_system.get_depth_image()
+        success, depth_image1, depth_image2 = self.camera_system.get_depth_images()
         self.assertFalse(success)
         self.assertIsNone(depth_image1)
         self.assertIsNone(depth_image2)

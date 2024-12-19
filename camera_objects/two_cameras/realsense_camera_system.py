@@ -7,7 +7,7 @@ from typing import Tuple, Optional
 import numpy as np
 import pyrealsense2 as rs
 
-from camera_objects.camera_abstract_class import TwoCamerasSystem
+from camera_objects.two_cameras.two_cameras_system import TwoCamerasSystem
 
 class RealsenseCameraSystem(TwoCamerasSystem):
     """
@@ -16,7 +16,7 @@ class RealsenseCameraSystem(TwoCamerasSystem):
     Functions:
         __init__(int, int, int) -> None
         get_grayscale_images() -> Tuple[bool, np.ndarray, np.ndarray]
-        get_depth_image() -> Tuple[bool, np.ndarray]
+        get_depth_images() -> Tuple[bool, np.ndarray, np.ndarray]
         get_width() -> int
         get_height() -> int
         release() -> bool
@@ -92,7 +92,7 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         ir_image_right = np.asanyarray(ir_frame_right.get_data())
         return [True, ir_image_left, ir_image_right]
 
-    def get_depth_image(self) -> Tuple[bool, np.ndarray, np.ndarray]:
+    def get_depth_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
         Get depth images for the camera system.
 
@@ -100,7 +100,7 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         No arguments.
 
         returns:
-        Tuple[bool, np.ndarray]:
+        Tuple[bool, np.ndarray, np.ndarray]:
             - bool: Whether depth image grabbing is successful or not.
             - np.ndarray: first depth grayscale image.
             - np.ndarray: second depth grayscale image.

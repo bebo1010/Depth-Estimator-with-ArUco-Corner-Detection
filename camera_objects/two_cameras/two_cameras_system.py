@@ -13,7 +13,7 @@ class TwoCamerasSystem(ABC):
     Functions:
         __init__() -> None
         get_grayscale_images() -> Tuple[bool, np.ndarray, np.ndarray]
-        get_depth_image() -> Tuple[bool, np.ndarray]
+        get_depth_images() -> Tuple[bool, np.ndarray, np.ndarray]
         get_width() -> int
         get_height() -> int
         release() -> bool
@@ -44,7 +44,7 @@ class TwoCamerasSystem(ABC):
         """
         return
     @abstractmethod
-    def get_depth_image(self) -> Tuple[bool, np.ndarray, np.ndarray]:
+    def get_depth_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
         Get depth images for the camera system.
 
@@ -52,7 +52,7 @@ class TwoCamerasSystem(ABC):
         No arguments.
 
         returns:
-        Tuple[bool, np.ndarray]:
+        Tuple[bool, np.ndarray, np.ndarray]:
             - bool: Whether depth image grabbing is successful or not.
             - np.ndarray: first depth grayscale image.
             - np.ndarray: second depth grayscale image.
