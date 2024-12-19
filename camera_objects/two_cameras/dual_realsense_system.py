@@ -5,8 +5,8 @@ from typing import Tuple
 
 import numpy as np
 
-from camera_objects.camera_abstract_class import TwoCamerasSystem
-from camera_objects.realsense_camera_system import RealsenseCameraSystem
+from camera_objects.two_cameras.two_cameras_system import TwoCamerasSystem
+from camera_objects.two_cameras.realsense_camera_system import RealsenseCameraSystem
 
 class DualRealsenseSystem(TwoCamerasSystem):
     """
@@ -15,7 +15,7 @@ class DualRealsenseSystem(TwoCamerasSystem):
     Functions:
         __init__(RealsenseCameraSystem, RealsenseCameraSystem) -> None
         get_grayscale_images() -> Tuple[bool, np.ndarray, np.ndarray]
-        get_depth_image() -> Tuple[bool, np.ndarray]
+        get_depth_images() -> Tuple[bool, np.ndarray, np.ndarray]
         get_width() -> int
         get_height() -> int
         release() -> bool
@@ -58,7 +58,7 @@ class DualRealsenseSystem(TwoCamerasSystem):
         total_success = success1 and success2
         return total_success, left_image1, left_image2
 
-    def get_depth_image(self) -> Tuple[bool, np.ndarray, np.ndarray]:
+    def get_depth_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
         Get depth images for the camera system.
 
@@ -66,13 +66,13 @@ class DualRealsenseSystem(TwoCamerasSystem):
         No arguments.
 
         returns:
-        Tuple[bool, np.ndarray]:
+        Tuple[bool, np.ndarray, np.ndarray]:
             - bool: Whether depth image grabbing is successful or not.
             - np.ndarray: first depth grayscale image.
             - np.ndarray: second depth grayscale image.
         """
-        success1, depth_image1, _ = self.camera1.get_depth_image()
-        success2, depth_image2, _ = self.camera2.get_depth_image()
+        success1, depth_image1, _ = self.camera1.get_depth_images()
+        success2, depth_image2, _ = self.camera2.get_depth_images()
 
         total_success = success1 and success2
         return total_success, depth_image1, depth_image2
