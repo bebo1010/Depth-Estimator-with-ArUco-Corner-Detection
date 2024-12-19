@@ -3,7 +3,6 @@ Module for FLIR camera system.
 """
 import logging
 from typing import Tuple
-import yaml
 
 import cv2
 import numpy as np
