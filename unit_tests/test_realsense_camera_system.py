@@ -108,5 +108,15 @@ class TestRealsenseCameraSystem(unittest.TestCase):
         self.assertTrue(self.camera_system.release())
         self.mock_pipeline.stop.assert_called_once()
 
+    @patch('camera_objects.two_cameras.realsense_camera_system.rs.config')
+    def test_init_with_serial_number(self, mock_config):
+        """
+        Test initialization with a specific serial number.
+        """
+        serial_number = "123456789"
+        mock_config_instance = mock_config.return_value
+        RealsenseCameraSystem(640, 480, serial_number)
+        mock_config_instance.enable_device.assert_called_once_with(serial_number)
+
 if __name__ == '__main__':
     unittest.main()

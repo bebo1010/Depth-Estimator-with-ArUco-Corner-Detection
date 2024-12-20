@@ -41,10 +41,8 @@ class RealsenseCameraSystem(TwoCamerasSystem):
 
         logging.info("Initializing Realsense camera system with width: %d, height: %d", width, height)
         if serial_number is not None:
-            logging.info("Using Realsense camera with serial number: %s", serial_number)
-
-        if serial_number is not None:
             config.enable_device(serial_number)
+            logging.info("Using Realsense camera with serial number: %s", serial_number)
 
         self.width = width
         self.height = height
