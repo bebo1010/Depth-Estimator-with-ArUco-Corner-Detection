@@ -50,6 +50,36 @@ class TestRealsenseCameraSystem(unittest.TestCase):
         self.assertIsNotNone(left_image)
         self.assertIsNotNone(right_image)
 
+    def test_get_grayscale_images_failure_left(self):
+        """
+        Test failure to retrieve left grayscale image.
+        """
+        mock_frames = MagicMock()
+        mock_ir_frame_right = MagicMock()
+        mock_ir_frame_right.get_data.return_value = np.zeros((480, 640), dtype=np.uint8)
+        mock_frames.get_infrared_frame.side_effect = [None, mock_ir_frame_right]
+        self.mock_pipeline.wait_for_frames.return_value = mock_frames
+
+        success, left_image, right_image = self.camera_system.get_grayscale_images()
+        self.assertFalse(success)
+        self.assertIsNone(left_image)
+        self.assertIsNotNone(right_image)
+
+    def test_get_grayscale_images_failure_right(self):
+        """
+        Test failure to retrieve right grayscale image.
+        """
+        mock_frames = MagicMock()
+        mock_ir_frame_left = MagicMock()
+        mock_ir_frame_left.get_data.return_value = np.zeros((480, 640), dtype=np.uint8)
+        mock_frames.get_infrared_frame.side_effect = [mock_ir_frame_left, None]
+        self.mock_pipeline.wait_for_frames.return_value = mock_frames
+
+        success, left_image, right_image = self.camera_system.get_grayscale_images()
+        self.assertFalse(success)
+        self.assertIsNotNone(left_image)
+        self.assertIsNone(right_image)
+
     def test_get_grayscale_images_failure(self):
         """
         Test failure to retrieve grayscale images.

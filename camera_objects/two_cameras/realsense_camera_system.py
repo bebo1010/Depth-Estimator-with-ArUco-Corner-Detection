@@ -70,25 +70,24 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         returns:
         Tuple[bool, np.ndarray, np.ndarray]:
             - bool: Whether images grabbing is successful or not.
-            - np.ndarray: left grayscale image.
-            - np.ndarray: right grayscale image.
+            - np.ndarray: left grayscale image (or None if failed).
+            - np.ndarray: right grayscale image (or None if failed).
         """
         logging.info("Grabbing grayscale images from Realsense camera")
         frames = self.pipeline.wait_for_frames()
         ir_frame_left = frames.get_infrared_frame(1)  # Left IR
         ir_frame_right = frames.get_infrared_frame(2)  # Right IR
 
-        if not ir_frame_left:
-            logging.error("Failed to get images from Realsense left IR stream")
+        if not ir_frame_left and not ir_frame_right:
+            logging.error("Failed to get images from Realsense IR streams")
             return [False, None, None]
-        if not ir_frame_right:
-            logging.error("Failed to get images from Realsense right IR stream")
-            return [False, None, None]
-        logging.info("Successfully grabbed grayscale images from Realsense camera")
-        # Convert images to numpy arrays
-        ir_image_left = np.asanyarray(ir_frame_left.get_data())
-        ir_image_right = np.asanyarray(ir_frame_right.get_data())
-        return [True, ir_image_left, ir_image_right]
+
+        ir_image_left = np.asanyarray(ir_frame_left.get_data()) if ir_frame_left else None
+        ir_image_right = np.asanyarray(ir_frame_right.get_data()) if ir_frame_right else None
+
+        success = ir_image_left is not None and ir_image_right is not None
+        logging.info("Successfully grabbed grayscale images from Realsense camera" if success else "Failed to grab both grayscale images from Realsense camera")
+        return [success, ir_image_left, ir_image_right]
 
     def get_depth_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
