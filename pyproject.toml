@@ -32,11 +32,11 @@ directory = "coverage_html_report"
 requires-python = ">=3.8,<3.9"
 
 [project.dependencies]
-numpy==1.23.5
-opencv_contrib_python==4.10.0.84
-opencv_python==4.8.1.78
-pyrealsense2==2.55.1.6486
-PyYAML==6.0.2
+numpy = "1.23.5"
+opencv_contrib_python = "4.10.0.84"
+opencv_python = "4.8.1.78"
+pyrealsense2 = "2.55.1.6486"
+PyYAML = "6.0.2"
 # require install PySpin with pip install spinnaker_python-4.0.0.116-cp38-cp38-win_amd64.whl
 # link to wheel file can be found in README
 
