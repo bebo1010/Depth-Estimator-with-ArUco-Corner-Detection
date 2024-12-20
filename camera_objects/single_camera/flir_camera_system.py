@@ -67,6 +67,7 @@ class FlirCameraSystem(SingleCameraSystem):
             raise ValueError("No cameras detected.")
 
         self.cam: PySpin.CameraPtr = self.cam_list.GetBySerial(serial_number)
+        self.serial_number = serial_number
         self.cam.Init()
 
         self._configure_camera(self.cam)
@@ -75,6 +76,7 @@ class FlirCameraSystem(SingleCameraSystem):
 
         self.image_processor = PySpin.ImageProcessor()
         self.image_processor.SetColorProcessing(PySpin.SPINNAKER_COLOR_PROCESSING_ALGORITHM_HQ_LINEAR)
+
     def get_grayscale_image(self) -> Tuple[bool, np.ndarray]:
         """
         Get grayscale image for the camera.
@@ -90,7 +92,7 @@ class FlirCameraSystem(SingleCameraSystem):
         if not self.cam.IsStreaming():
             self.cam.BeginAcquisition()
 
-        serial_number = self._get_serial_number(self.cam)
+        serial_number = self.serial_number
 
         logging.info("Reading Frame for %s...", serial_number)
         image_result: PySpin.ImagePtr = self.cam.GetNextImage(1000)
@@ -229,9 +231,11 @@ class FlirCameraSystem(SingleCameraSystem):
             }
         }
         return config
+
     def _get_serial_number(self, cam: PySpin.CameraPtr) -> int:
         """
         Get serial number for the camera.
+        Currently unused, Leave this for future use.
 
         Args:
             cam (PySpin.CameraPtr): The camera object to configure.
@@ -245,6 +249,7 @@ class FlirCameraSystem(SingleCameraSystem):
         if PySpin.IsReadable(serial_number_node):
             return serial_number_node.GetValue()
         return "Unknown"
+
     def _configure_camera(self, cam: PySpin.CameraPtr) -> None:
         """
         Configure the basic settings for single camera.
@@ -255,7 +260,7 @@ class FlirCameraSystem(SingleCameraSystem):
         Returns:
             None
         """
-        serial_number = self._get_serial_number(cam)
+        serial_number = self.serial_number
         logging.info("Configuring camera %s", serial_number)
 
         self._load_user_set(cam)
@@ -265,6 +270,7 @@ class FlirCameraSystem(SingleCameraSystem):
         self._configure_exposure(cam, self.full_config['exposure_settings'])
         self._configure_gain(cam, self.full_config['gain_settings'])
         self._configure_white_balance(cam, self.full_config['white_balance_settings'])
+
     def _load_user_set(self, cam: PySpin.CameraPtr, user_set_name: str = "Default") -> None:
         """
         Load a specified user set from the camera.
@@ -275,7 +281,7 @@ class FlirCameraSystem(SingleCameraSystem):
         returns:
         No return.
         """
-        serial_number = self._get_serial_number(cam)
+        serial_number = self.serial_number
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
 
         # Select the User Set
@@ -301,6 +307,7 @@ class FlirCameraSystem(SingleCameraSystem):
 
         user_set_load.Execute()
         logging.info("User Set %s of camera %s loaded", user_set_name, serial_number)
+
     def _configure_camera_general(self, cam: PySpin.CameraPtr, general_config: dict) -> None:
         """
         Configure the general settings for single camera.
@@ -313,33 +320,35 @@ class FlirCameraSystem(SingleCameraSystem):
         Returns:
             None
         """
+        serial_number = self.serial_number
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
         cam_width = PySpin.CIntegerPtr(nodemap.GetNode('Width'))
         cam_width.SetValue(general_config['width'])
         logging.info('Width of camera %s is set to %d',
-                     self._get_serial_number(cam), general_config['width'])
+                     serial_number, general_config['width'])
 
         cam_height = PySpin.CIntegerPtr(nodemap.GetNode('Height'))
         cam_height.SetValue(general_config['height'])
         logging.info('Height of camera %s is set to %d',
-                     self._get_serial_number(cam), general_config['height'])
+                     serial_number, general_config['height'])
 
         cam_offset_x = PySpin.CIntegerPtr(nodemap.GetNode('OffsetX'))
         cam_offset_x.SetValue(general_config['offset_x'])
         logging.info('OffsetX of camera %s is set to %d',
-                     self._get_serial_number(cam), general_config['offset_x'])
+                     serial_number, general_config['offset_x'])
 
         cam_offset_y = PySpin.CIntegerPtr(nodemap.GetNode('OffsetY'))
         cam_offset_y.SetValue(general_config['offset_y'])
         logging.info('OffsetY of camera %s is set to %d',
-                     self._get_serial_number(cam), general_config['offset_y'])
+                     serial_number, general_config['offset_y'])
 
         pixel_format = PySpin.CEnumerationPtr(nodemap.GetNode('PixelFormat'))
         pixel_format_entry: PySpin.CEnumEntryPtr =  \
             pixel_format.GetEntryByName(general_config['pixel_format'])
         pixel_format.SetIntValue(pixel_format_entry.GetValue())
         logging.info('Pixel format of camera %s is set to %s',
-                     self._get_serial_number(cam), general_config['pixel_format'])
+                     serial_number, general_config['pixel_format'])
+
     def _configure_acquisition(self, cam: PySpin.CameraPtr, acquisition_config: dict) -> None:
         """
         Configure the acquisition settings for single camera.
@@ -352,7 +361,7 @@ class FlirCameraSystem(SingleCameraSystem):
         Returns:
             None
         """
-        serial_number = self._get_serial_number(cam)
+        serial_number = self.serial_number
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
 
         acquisition_mode = PySpin.CEnumerationPtr(nodemap.GetNode('AcquisitionMode'))
@@ -373,6 +382,7 @@ class FlirCameraSystem(SingleCameraSystem):
         frame_rate.SetValue(acquisition_config['fps'])
         logging.info('Frame rate of camera %s is set to %s fps',
                      serial_number, acquisition_config['fps'])
+
     def _configure_exposure(self, cam: PySpin.CameraPtr, exposure_config: dict) -> None:
         """
         Configure the exposure settings for single camera.
@@ -385,7 +395,7 @@ class FlirCameraSystem(SingleCameraSystem):
         Returns:
             None
         """
-        serial_number = self._get_serial_number(cam)
+        serial_number = self.serial_number
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
 
         exposure_auto = PySpin.CEnumerationPtr(nodemap.GetNode('ExposureAuto'))
@@ -397,6 +407,7 @@ class FlirCameraSystem(SingleCameraSystem):
         exposure_time.SetValue(exposure_config['exposure_time'])
         logging.info('Exposure time of camera %s is set to %s',
                      serial_number, exposure_config['exposure_time'])
+
     def _configure_gain(self, cam: PySpin.CameraPtr, gain_config: dict) -> None:
         """
         Configure the gain settings for single camera.
@@ -409,7 +420,7 @@ class FlirCameraSystem(SingleCameraSystem):
         Returns:
             None
         """
-        serial_number = self._get_serial_number(cam)
+        serial_number = self.serial_number
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
 
         gain_auto = PySpin.CEnumerationPtr(nodemap.GetNode('GainAuto'))
@@ -423,6 +434,7 @@ class FlirCameraSystem(SingleCameraSystem):
         gain.SetValue(gain_config['gain_value'])
         logging.info('Gain of camera %s is set to %s',
                      serial_number, gain_config['gain_value'])
+
     def _configure_white_balance(self, cam: PySpin.CameraPtr, white_balance_config: dict) -> None:
         """
         Configure the white balance settings for single camera.
@@ -436,7 +448,7 @@ class FlirCameraSystem(SingleCameraSystem):
         Returns:
             None
         """
-        serial_number = self._get_serial_number(cam)
+        serial_number = self.serial_number
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
         node_balance_white_auto = PySpin.CEnumerationPtr(nodemap.GetNode('BalanceWhiteAuto'))
         node_balance_white_auto_value =  \
@@ -461,6 +473,7 @@ class FlirCameraSystem(SingleCameraSystem):
             node_balance_ratio.SetValue(white_balance_config['white_balance_red_ratio'])
             logging.info('White balance red ratio of camera %s is set to %f.',
                          serial_number, white_balance_config['white_balance_red_ratio'])
+
     def _configure_gpio_primary(self, cam: PySpin.CameraPtr, gpio_primary_config: dict) -> None:
         """
         Configure the GPIO settings to primary for single camera.
@@ -473,7 +486,7 @@ class FlirCameraSystem(SingleCameraSystem):
         Returns:
             None
         """
-        serial_number = self._get_serial_number(cam)
+        serial_number = self.serial_number
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
         trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
         trigger_mode_on = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName(gpio_primary_config['trigger_mode']))
@@ -498,6 +511,7 @@ class FlirCameraSystem(SingleCameraSystem):
         line_source.SetIntValue(line_source_entry.GetValue())
         logging.info('Line source of primary camera %s is set to %s',
                      serial_number, gpio_primary_config['line_source'])
+
     def _configure_gpio_secondary(self, cam: PySpin.CameraPtr, gpio_secondary_config: dict) -> None:
         """
         Configure the GPIO settings to secondary for single camera.
@@ -510,7 +524,7 @@ class FlirCameraSystem(SingleCameraSystem):
         Returns:
             None
         """
-        serial_number = self._get_serial_number(cam)
+        serial_number = self.serial_number
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
 
         trigger_selector = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerSelector'))
@@ -546,6 +560,7 @@ class FlirCameraSystem(SingleCameraSystem):
         line_selector.SetIntValue(line_selector_entry.GetValue())
         logging.info('Line selector of secondary camera %s is set to %s',
                      serial_number, gpio_secondary_config['trigger_source'])
+
     def _enable_trigger_mode(self, cam: PySpin.CameraPtr) -> None:
         """
         Enable trigger mode for single camera.
@@ -556,12 +571,13 @@ class FlirCameraSystem(SingleCameraSystem):
         Returns:
             None
         """
-        serial_number = self._get_serial_number(cam)
+        serial_number = self.serial_number
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
         trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
         trigger_mode_on = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName('On'))
         trigger_mode.SetIntValue(trigger_mode_on.GetValue())
         logging.info('Trigger mode of camera %s is enabled', serial_number)
+
     def _disable_trigger_mode(self, cam: PySpin.CameraPtr) -> None:
         """
         Disable trigger mode for single camera.
@@ -572,7 +588,7 @@ class FlirCameraSystem(SingleCameraSystem):
         Returns:
             None
         """
-        serial_number = self._get_serial_number(cam)
+        serial_number = self.serial_number
         nodemap: PySpin.NodeMap = cam.GetNodeMap()
         trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
         trigger_mode_off = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName('Off'))
