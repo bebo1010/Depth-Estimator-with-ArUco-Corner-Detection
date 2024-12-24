@@ -30,7 +30,7 @@ directory = "coverage_html_report"
 
 [project]
 requires-python = ">=3.8,<3.9"
-name = "Depth Estimator with ArUco Corners Detection"
+name = "Depth-Estimator-with-ArUco-Corners-Detection"
 version = "0.3.1"
 description = """
 A depth estimator using ArUco corner detection.
