@@ -40,7 +40,6 @@ The project is designed to work with Python 3.8 and includes dependencies for im
 Currently tested on single RealSense, dual RealSense, and FLIR Grasshopper3 cameras.
 """
 
-[project.dependencies]
 dependencies = [
     "numpy==1.23.5",
     "opencv_contrib_python==4.10.0.84",
@@ -53,11 +52,6 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "numpy==1.23.5",
-    "opencv_contrib_python==4.10.0.84",
-    "opencv_python==4.8.1.78",
-    "pyrealsense2==2.55.1.6486",
-    "PyYAML==6.0.2",
     "pylint==3.2.7",
     "pytest==7.4.4"
 ]
