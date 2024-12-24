@@ -1,6 +1,6 @@
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
-pythonpath = "./"
+pythonpath = "./src"
 [tool.coverage.run]
 branch = true
 
@@ -33,7 +33,6 @@ requires-python = ">=3.8,<3.9"
 name = "Depth-Estimator-with-ArUco-Corners-Detection"
 version = "0.3.1"
 description = """
-A depth estimator using ArUco corner detection.
 This project leverages OpenCV and Intel RealSense technology to estimate depth from images.
 It uses ArUco markers for accurate corner detection and depth calculation.
 The project is designed to work with Python 3.8 and includes dependencies for image processing and camera interfacing.

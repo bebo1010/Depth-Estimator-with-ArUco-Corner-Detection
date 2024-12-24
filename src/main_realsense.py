@@ -1,5 +1,5 @@
 """
-Main funtion to start the application with Realsense camera system.
+Main function to start the application with Realsense camera system.
 """
 
 if __name__ == "__main__":
@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     UI = OpencvUIController(system_prefix="Realsense", focal_length=FOCAL_LENGTH, baseline=BASELINE)
 
-    cameras = RealsenseCameraSystem(width = WIDTH, height = HEIGHT)
+    cameras = RealsenseCameraSystem(width=WIDTH, height=HEIGHT)
     UI.set_camera_system(cameras)
 
     UI.start()
