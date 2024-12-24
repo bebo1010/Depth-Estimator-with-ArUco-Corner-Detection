@@ -7,7 +7,7 @@ from typing import Tuple, Optional
 import numpy as np
 import pyrealsense2 as rs
 
-from camera_objects.two_cameras.two_cameras_system import TwoCamerasSystem
+from .two_cameras_system import TwoCamerasSystem
 
 class RealsenseCameraSystem(TwoCamerasSystem):
     """

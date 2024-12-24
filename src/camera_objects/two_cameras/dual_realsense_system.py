@@ -5,8 +5,8 @@ from typing import Tuple
 
 import numpy as np
 
-from camera_objects.two_cameras.two_cameras_system import TwoCamerasSystem
-from camera_objects.two_cameras.realsense_camera_system import RealsenseCameraSystem
+from .two_cameras_system import TwoCamerasSystem
+from .realsense_camera_system import RealsenseCameraSystem
 
 class DualRealsenseSystem(TwoCamerasSystem):
     """

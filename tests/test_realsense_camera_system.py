@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-from camera_objects.two_cameras.realsense_camera_system import RealsenseCameraSystem
+from src.camera_objects import RealsenseCameraSystem
 
 class TestRealsenseCameraSystem(unittest.TestCase):
     """
@@ -20,7 +20,7 @@ class TestRealsenseCameraSystem(unittest.TestCase):
         logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
 
         # Patch rs.pipeline
-        patcher = patch('camera_objects.two_cameras.realsense_camera_system.rs.pipeline')
+        patcher = patch('src.camera_objects.two_cameras.realsense_camera_system.rs.pipeline')
         self.addCleanup(patcher.stop)
         self.mock_pipeline = patcher.start().return_value
 
@@ -138,7 +138,7 @@ class TestRealsenseCameraSystem(unittest.TestCase):
         self.assertTrue(self.camera_system.release())
         self.mock_pipeline.stop.assert_called_once()
 
-    @patch('camera_objects.two_cameras.realsense_camera_system.rs.config')
+    @patch('src.camera_objects.two_cameras.realsense_camera_system.rs.config')
     def test_init_with_serial_number(self, mock_config):
         """
         Test initialization with a specific serial number.

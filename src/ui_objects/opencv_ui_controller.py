@@ -9,8 +9,8 @@ from typing import Tuple, Optional
 import cv2
 import numpy as np
 
-from camera_objects.two_cameras.two_cameras_system import TwoCamerasSystem
-from aruco_detector.aruco_detector import ArUcoDetector
+from camera_objects import TwoCamerasSystem
+from aruco_detector import ArUcoDetector
 from utils.file_utils import get_starting_index
 
 class OpencvUIController():

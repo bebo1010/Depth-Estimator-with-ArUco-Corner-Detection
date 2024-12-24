@@ -4,8 +4,8 @@ Main function to start the application with FLIR camera system.
 
 if __name__ == "__main__":
     from ui_objects.opencv_ui_controller import OpencvUIController
-    from camera_objects.two_cameras.dual_flir_system import DualFlirSystem
-    from camera_objects.single_camera.flir_camera_system import FlirCameraSystem
+    from camera_objects import DualFlirSystem
+    from camera_objects import FlirCameraSystem
 
     FOCAL_LENGTH = 1060  # in pixels
     BASELINE = 80  # in mm
