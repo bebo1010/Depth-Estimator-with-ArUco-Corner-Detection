@@ -31,7 +31,7 @@ jobs:
           python -m venv .venv
           . .venv/bin/activate
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install .[test]
         shell: bash
 
       - name: Analyzing the code with pylint
@@ -59,13 +59,13 @@ jobs:
           python -m venv .venv
           . .venv/bin/activate
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install .[test]
         shell: bash
 
       - name: Run unit tests
         run: |
           . .venv/bin/activate
-          python -m unittest discover -s unit_tests
+          python -m unittest discover -s ./src/tests ./src
         shell: bash
 
   all-checks-passed:

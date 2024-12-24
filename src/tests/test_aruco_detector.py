@@ -45,5 +45,23 @@ class TestArUcoDetector(unittest.TestCase):
         self.assertEqual(len(matching_ids), 1)
         self.assertEqual(matching_ids[0], 0)
 
+    def test_detect_aruco_no_markers(self):
+        """
+        Test detection when no ArUco markers are present in the image.
+        """
+        empty_image = np.full((200, 200), fill_value=255, dtype=np.uint8)  # Completely white image
+        _, ids = self.detector.detect_aruco(empty_image)
+        self.assertIsNone(ids)
+
+    def test_detect_aruco_two_images_no_markers(self):
+        """
+        Test detection when no ArUco markers are present in both images.
+        """
+        empty_image_left = np.full((200, 200), fill_value=255, dtype=np.uint8)  # Completely white image
+        empty_image_right = np.full((200, 200), fill_value=255, dtype=np.uint8)  # Completely white image
+
+        matching_ids, _, _ = self.detector.detect_aruco_two_images(empty_image_left, empty_image_right)
+        self.assertEqual(len(matching_ids), 0)
+
 if __name__ == '__main__':
     unittest.main()

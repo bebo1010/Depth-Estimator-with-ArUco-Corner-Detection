@@ -28,4 +28,5 @@ gpio_secondary:
   trigger_selector: FrameStart
   trigger_mode: 'On'
   trigger_source: Line3
+  trigger_activation: FallingEdge
   trigger_overlap: ReadOut

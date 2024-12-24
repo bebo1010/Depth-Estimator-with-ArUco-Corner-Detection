@@ -1,5 +1,20 @@
 # Depth Estimator with ArUco Corner Detection
 
+## Environment Setup
+
+1. Install Python 3.8 or higher.
+2. Install the required packages:
+    ```bash
+    pip install .
+    ```
+3. Install the PySpin library:
+    - Download the appropriate PySpin wheel file from [here](https://www.flir.com/products/spinnaker-sdk/)
+    - [PySpin 4.0.0.116, Python 3.8](https://drive.google.com/file/d/1G4BkDU8xr4Tgu4M9vk-Q2gX3HwvO-WSZ/view?usp=sharing)
+    - Install the wheel file:
+        ```bash
+        pip install <path_to_wheel_file>
+        ```
+
 ## Functionality
 - [x] Read two Realsense IR camera streams and Realsense depth stream
 - [x] Detect ArUco markers for each stream
@@ -103,4 +118,4 @@
 ├── main_realsense.py
 ├── README.md
 └── requirements.txt
-```
+````

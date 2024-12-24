@@ -1,16 +1,56 @@
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
-pythonpath = "./"
+pythonpath = "./src"
+[tool.coverage.run]
+branch = true
+
 [tool.coverage.report]
+# Regexes for lines to exclude from consideration
 exclude_also = [
+    # Don't complain about missing debug-only code:
     "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
+    "if self\\.debug",
+
+    # Don't complain if tests don't hit defensive assertion code:
     "raise AssertionError",
     "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
     "if 0:",
     "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "class .*\\bProtocol\\):",
+
+    # Don't complain about abstract methods, they aren't run:
     "@(abc\\.)?abstractmethod",
     ]
+
+ignore_errors = true
+
+[tool.coverage.html]
+directory = "coverage_html_report"
+
+[project]
+requires-python = ">=3.8,<3.9"
+name = "Depth-Estimator-with-ArUco-Corners-Detection"
+version = "0.3.1"
+description = """
+This project leverages OpenCV and Intel RealSense technology to estimate depth from images.
+It uses ArUco markers for accurate corner detection and depth calculation.
+The project is designed to work with Python 3.8 and includes dependencies for image processing and camera interfacing.
+Currently tested on single RealSense, dual RealSense, and FLIR Grasshopper3 cameras.
+"""
+
+dependencies = [
+    "numpy==1.23.5",
+    "opencv_contrib_python==4.10.0.84",
+    "opencv_python==4.8.1.78",
+    "pyrealsense2==2.55.1.6486",
+    "PyYAML==6.0.2"
+]
+# require install PySpin with pip install spinnaker_python-4.0.0.116-cp38-cp38-win_amd64.whl
+# link to wheel file can be found in README
+
+[project.optional-dependencies]
+test = [
+    "pylint==3.2.7",
+    "pytest==7.4.4"
+]

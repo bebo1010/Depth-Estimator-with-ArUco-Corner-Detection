@@ -36,6 +36,11 @@ class DualFlirSystem(TwoCamerasSystem):
         self.camera1 = camera1
         self.camera2 = camera2
 
+        self.camera1.configure_gpio_primary()
+        self.camera2.configure_gpio_secondary()
+
+        self.camera1.disable_trigger_mode()
+
         self.width = camera1.get_width()
         self.height = camera1.get_height()
 
