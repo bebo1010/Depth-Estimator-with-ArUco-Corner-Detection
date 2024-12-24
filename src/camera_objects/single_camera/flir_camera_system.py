@@ -194,7 +194,8 @@ class FlirCameraSystem(SingleCameraSystem):
 
         line_selector = PySpin.CEnumerationPtr(nodemap.GetNode('LineSelector'))
         if PySpin.IsWritable(line_selector):
-            line_selector_entry = PySpin.CEnumEntryPtr(line_selector.GetEntryByName(gpio_primary_config['line_selector']))
+            line_selector_entry = \
+                PySpin.CEnumEntryPtr(line_selector.GetEntryByName(gpio_primary_config['line_selector']))
             line_selector.SetIntValue(line_selector_entry.GetValue())
             logging.info('Line selector of primary camera %s is set to %s',
                          serial_number, gpio_primary_config['line_selector'])
@@ -581,7 +582,8 @@ class FlirCameraSystem(SingleCameraSystem):
                     logging.info('White balance blue ratio of camera %s is set to %f.',
                                  serial_number, white_balance_config['white_balance_blue_ratio'])
 
-                node_balance_ratio_selector_red = PySpin.CEnumEntryPtr(node_balance_ratio_selector.GetEntryByName('Red'))
+                node_balance_ratio_selector_red = \
+                    PySpin.CEnumEntryPtr(node_balance_ratio_selector.GetEntryByName('Red'))
                 node_balance_ratio_selector.SetIntValue(node_balance_ratio_selector_red.GetValue())
                 node_balance_ratio.SetValue(white_balance_config['white_balance_red_ratio'])
                 logging.info('White balance red ratio of camera %s is set to %f.',

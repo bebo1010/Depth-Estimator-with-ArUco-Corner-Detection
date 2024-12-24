@@ -46,23 +46,22 @@ class TestFileUtils(unittest.TestCase):
             self.assertEqual(config['camera_settings']['width'], 1920)
             self.assertEqual(config['camera_settings']['height'], 1084)
 
-    @patch('builtins.open', side_effect=OSError("File not found"))
-    def test_parse_yaml_config_oserror(self, mock_open):
+    def test_parse_yaml_config_oserror(self):
         """
         Test parsing of YAML configuration file when OSError is raised.
         """
-        config = parse_yaml_config("dummy_path")
-        self.assertIsNone(config)
+        with patch('builtins.open', side_effect=OSError("File not found")):
+            config = parse_yaml_config("dummy_path")
+            self.assertIsNone(config)
 
-    @patch('builtins.open')
-    def test_parse_yaml_config_yamlerror(self, mock_open):
+    def test_parse_yaml_config_yamlerror(self):
         """
         Test parsing of YAML configuration file when YAMLError is raised.
         """
-        mock_open.return_value = mock_open(read_data="invalid_yaml: [")
-        with patch('yaml.safe_load', side_effect=yaml.YAMLError("YAML error")):
-            config = parse_yaml_config("dummy_path")
-            self.assertIsNone(config)
+        with patch('builtins.open', mock_open(read_data="invalid_yaml: [")):
+            with patch('yaml.safe_load', side_effect=yaml.YAMLError("YAML error")):
+                config = parse_yaml_config("dummy_path")
+                self.assertIsNone(config)
 
 if __name__ == '__main__':
     unittest.main()
