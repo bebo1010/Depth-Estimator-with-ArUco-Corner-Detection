@@ -22,21 +22,19 @@ class FlirCameraSystem(SingleCameraSystem):
         get_width() -> int
         get_height() -> int
         release() -> bool
+        configure_gpio_primary() -> None
+        configure_gpio_secondary() -> None
+        enable_trigger_mode() -> None
+        disable_trigger_mode() -> None
         _get_default_config() -> dict
-        _get_serial_number(PySpin.CameraPtr) -> int
-        _configure_camera(cam: PySpin.CameraPtr) -> None
-        _load_user_set(PySpin.CameraPtr, str) -> None
-        _configure_camera_general(PySpin.CameraPtr, dict) -> None
-        _configure_acquisition(PySpin.CameraPtr, dict) -> None
-        _configure_exposure(PySpin.CameraPtr, dict) -> None
-        _configure_gain(PySpin.CameraPtr, dict) -> None
-        _configure_white_balance(PySpin.CameraPtr, dict) -> None
-        _configure_gpio_primary(PySpin.CameraPtr, dict) -> None
-        _configure_gpio_secondary(PySpin.CameraPtr, dict) -> None
-        _enable_trigger_mode(PySpin.CameraPtr) -> None
-        _disable_trigger_mode(PySpin.CameraPtr) -> None
-        _configure_master_camera(PySpin.CameraPtr) -> None
-        _configure_slave_camera(PySpin.CameraPtr) -> None
+        _get_serial_number() -> int
+        _configure_camera() -> None
+        _load_user_set(str) -> None
+        _configure_camera_general() -> None
+        _configure_acquisition() -> None
+        _configure_exposure() -> None
+        _configure_gain() -> None
+        _configure_white_balance() -> None
     """
     def __init__(self,
                  config_yaml_path,
@@ -70,7 +68,7 @@ class FlirCameraSystem(SingleCameraSystem):
         self.serial_number = serial_number
         self.cam.Init()
 
-        self._configure_camera(self.cam)
+        self._configure_camera()
 
         self.image_processor = PySpin.ImageProcessor()
         self.image_processor.SetColorProcessing(PySpin.SPINNAKER_COLOR_PROCESSING_ALGORITHM_HQ_LINEAR)
@@ -175,6 +173,133 @@ class FlirCameraSystem(SingleCameraSystem):
         logging.info("System released.")
 
         return True
+
+    def configure_gpio_primary(self) -> None:
+        """
+        Configure the GPIO settings to primary for single camera.
+        Settings: trigger mode, line selector, line mode, line source
+
+        Returns:
+            None
+        """
+        serial_number = self.serial_number
+        nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
+        gpio_primary_config = self.full_config['gpio_primary']
+        trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
+        if PySpin.IsWritable(trigger_mode):
+            trigger_mode_on = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName(gpio_primary_config['trigger_mode']))
+            trigger_mode.SetIntValue(trigger_mode_on.GetValue())
+            logging.info('Trigger mode of primary camera %s is set to %s',
+                         serial_number, gpio_primary_config['trigger_mode'])
+
+        line_selector = PySpin.CEnumerationPtr(nodemap.GetNode('LineSelector'))
+        if PySpin.IsWritable(line_selector):
+            line_selector_entry = PySpin.CEnumEntryPtr(line_selector.GetEntryByName(gpio_primary_config['line_selector']))
+            line_selector.SetIntValue(line_selector_entry.GetValue())
+            logging.info('Line selector of primary camera %s is set to %s',
+                         serial_number, gpio_primary_config['line_selector'])
+
+        line_mode = PySpin.CEnumerationPtr(nodemap.GetNode('LineMode'))
+        if PySpin.IsWritable(line_mode):
+            line_mode_entry = PySpin.CEnumEntryPtr(line_mode.GetEntryByName(gpio_primary_config['line_mode']))
+            line_mode.SetIntValue(line_mode_entry.GetValue())
+            logging.info('Line mode of primary camera %s is set to %s',
+                         serial_number, gpio_primary_config['line_mode'])
+
+        line_source = PySpin.CEnumerationPtr(nodemap.GetNode('LineSource'))
+        if PySpin.IsWritable(line_source):
+            line_source_entry = PySpin.CEnumEntryPtr(line_source.GetEntryByName(gpio_primary_config['line_source']))
+            line_source.SetIntValue(line_source_entry.GetValue())
+            logging.info('Line source of primary camera %s is set to %s',
+                         serial_number, gpio_primary_config['line_source'])
+
+    def configure_gpio_secondary(self) -> None:
+        """
+        Configure the GPIO settings to secondary for single camera.
+        Settings: trigger selector, trigger mode, trigger source, trigger overlap, trigger source
+
+        Returns:
+            None
+        """
+        serial_number = self.serial_number
+        nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
+        gpio_secondary_config = self.full_config['gpio_secondary']
+
+        trigger_selector = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerSelector'))
+        if PySpin.IsWritable(trigger_selector):
+            trigger_selector_entry = \
+                PySpin.CEnumEntryPtr(trigger_selector.GetEntryByName(gpio_secondary_config['trigger_selector']))
+            trigger_selector.SetIntValue(trigger_selector_entry.GetValue())
+            logging.info('Trigger selector of secondary camera %s is set to %s',
+                         serial_number, gpio_secondary_config['trigger_selector'])
+
+        trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
+        if PySpin.IsWritable(trigger_mode):
+            trigger_mode_on = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName(gpio_secondary_config['trigger_mode']))
+            trigger_mode.SetIntValue(trigger_mode_on.GetValue())
+            logging.info('Trigger mode of secondary camera %s is set to %s',
+                         serial_number, gpio_secondary_config['trigger_mode'])
+
+        trigger_source = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerSource'))
+        if PySpin.IsWritable(trigger_source):
+            trigger_source_entry = \
+                PySpin.CEnumEntryPtr(trigger_source.GetEntryByName(gpio_secondary_config['trigger_source']))
+            trigger_source.SetIntValue(trigger_source_entry.GetValue())
+            logging.info('Trigger source of secondary camera %s is set to %s',
+                         serial_number, gpio_secondary_config['trigger_source'])
+
+        trigger_activation = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerActivation'))
+        if PySpin.IsWritable(trigger_activation):
+            trigger_activation_entry = \
+                PySpin.CEnumEntryPtr(trigger_activation.GetEntryByName(gpio_secondary_config['trigger_activation']))
+            trigger_activation.SetIntValue(trigger_activation_entry.GetValue())
+            logging.info('Trigger activation of secondary camera %s is set to %s',
+                         serial_number, gpio_secondary_config['trigger_activation'])
+
+        trigger_overlap = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerOverlap'))
+        if PySpin.IsWritable(trigger_overlap):
+            trigger_overlap_entry = \
+                PySpin.CEnumEntryPtr(trigger_overlap.GetEntryByName(gpio_secondary_config['trigger_overlap']))
+            trigger_overlap.SetIntValue(trigger_overlap_entry.GetValue())
+            logging.info('Trigger overlap of secondary camera %s is set to %s',
+                         serial_number, gpio_secondary_config['trigger_overlap'])
+
+        line_selector = PySpin.CEnumerationPtr(nodemap.GetNode('LineSelector'))
+        if PySpin.IsWritable(line_selector):
+            line_selector_entry = \
+                PySpin.CEnumEntryPtr(line_selector.GetEntryByName(gpio_secondary_config['trigger_source']))
+            line_selector.SetIntValue(line_selector_entry.GetValue())
+            logging.info('Line selector of secondary camera %s is set to %s',
+                         serial_number, gpio_secondary_config['trigger_source'])
+
+    def enable_trigger_mode(self) -> None:
+        """
+        Enable trigger mode for single camera.
+
+        Returns:
+            None
+        """
+        serial_number = self.serial_number
+        nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
+        trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
+        trigger_mode_on = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName('On'))
+        trigger_mode.SetIntValue(trigger_mode_on.GetValue())
+        logging.info('Trigger mode of camera %s is enabled', serial_number)
+
+    def disable_trigger_mode(self) -> None:
+        """
+        Disable trigger mode for single camera.
+
+        Returns:
+            None
+        """
+        serial_number = self.serial_number
+        nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
+        trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
+        trigger_mode_off = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName('Off'))
+        trigger_mode.SetIntValue(trigger_mode_off.GetValue())
+        logging.info('Trigger mode of camera %s is disabled', serial_number)
+
     def _get_default_config(self) -> dict:
         """
         Get default configuration file for flir camera system.
@@ -225,35 +350,29 @@ class FlirCameraSystem(SingleCameraSystem):
                 'trigger_selector': 'FrameStart',
                 'trigger_mode': 'On',
                 'trigger_source': 'Line3',
+                'trigger_activation': 'FallingEdge',
                 'trigger_overlap': 'ReadOut'
             }
         }
         return config
 
-    def _get_serial_number(self, cam: PySpin.CameraPtr) -> int:
+    def _get_serial_number(self) -> int:
         """
         Get serial number for the camera.
-        Currently unused, Leave this for future use.
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
 
         Returns:
             int:
                 - int: Serial number of the camera.
         """
-        nodemap: PySpin.NodeMap = cam.GetTLDeviceNodeMap()
+        nodemap: PySpin.NodeMap = self.cam.GetTLDeviceNodeMap()
         serial_number_node = PySpin.CStringPtr(nodemap.GetNode('DeviceSerialNumber'))
         if PySpin.IsReadable(serial_number_node):
             return serial_number_node.GetValue()
         return "Unknown"
 
-    def _configure_camera(self, cam: PySpin.CameraPtr) -> None:
+    def _configure_camera(self) -> None:
         """
         Configure the basic settings for single camera.
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
 
         Returns:
             None
@@ -261,26 +380,25 @@ class FlirCameraSystem(SingleCameraSystem):
         serial_number = self.serial_number
         logging.info("Configuring camera %s", serial_number)
 
-        self._load_user_set(cam)
+        self._load_user_set()
 
-        self._configure_camera_general(cam, self.full_config['camera_settings'])
-        self._configure_acquisition(cam, self.full_config['acquisition_settings'])
-        self._configure_exposure(cam, self.full_config['exposure_settings'])
-        self._configure_gain(cam, self.full_config['gain_settings'])
-        self._configure_white_balance(cam, self.full_config['white_balance_settings'])
+        self._configure_camera_general()
+        self._configure_acquisition()
+        self._configure_exposure()
+        self._configure_gain()
+        self._configure_white_balance()
 
-    def _load_user_set(self, cam: PySpin.CameraPtr, user_set_name: str = "Default") -> None:
+    def _load_user_set(self, user_set_name: str = "Default") -> None:
         """
         Load a specified user set from the camera.
 
         args:
-            cam (PySpin.CameraPtr): The camera object.
             user_set_name (str): The name of the user set to load (e.g., "Default").
         returns:
         No return.
         """
         serial_number = self.serial_number
-        nodemap: PySpin.NodeMap = cam.GetNodeMap()
+        nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
 
         # Select the User Set
         user_set_selector = PySpin.CEnumerationPtr(nodemap.GetNode('UserSetSelector'))
@@ -306,20 +424,17 @@ class FlirCameraSystem(SingleCameraSystem):
         user_set_load.Execute()
         logging.info("User Set %s of camera %s loaded", user_set_name, serial_number)
 
-    def _configure_camera_general(self, cam: PySpin.CameraPtr, general_config: dict) -> None:
+    def _configure_camera_general(self) -> None:
         """
         Configure the general settings for single camera.
         Settings: width, height, offset, pixel format
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
-            general_config (dict): The dictionary of general camera settings.
 
         Returns:
             None
         """
         serial_number = self.serial_number
-        nodemap: PySpin.NodeMap = cam.GetNodeMap()
+        nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
+        general_config = self.full_config['camera_settings']
         cam_width = PySpin.CIntegerPtr(nodemap.GetNode('Width'))
         if PySpin.IsWritable(cam_width):
             cam_width.SetValue(general_config['width'])
@@ -348,20 +463,17 @@ class FlirCameraSystem(SingleCameraSystem):
             logging.info('Pixel format of camera %s is set to %s',
                          serial_number, general_config['pixel_format'])
 
-    def _configure_acquisition(self, cam: PySpin.CameraPtr, acquisition_config: dict) -> None:
+    def _configure_acquisition(self) -> None:
         """
         Configure the acquisition settings for single camera.
         Settings: continuous streaming, frame rate control
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
-            acquisition_config (dict): The dictionary of acquisition settings.
 
         Returns:
             None
         """
         serial_number = self.serial_number
-        nodemap: PySpin.NodeMap = cam.GetNodeMap()
+        nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
+        acquisition_config = self.full_config['acquisition_settings']
 
         acquisition_mode = PySpin.CEnumerationPtr(nodemap.GetNode('AcquisitionMode'))
         if PySpin.IsWritable(acquisition_mode):
@@ -386,20 +498,17 @@ class FlirCameraSystem(SingleCameraSystem):
             logging.info('Frame rate of camera %s is set to %s fps',
                          serial_number, acquisition_config['fps'])
 
-    def _configure_exposure(self, cam: PySpin.CameraPtr, exposure_config: dict) -> None:
+    def _configure_exposure(self) -> None:
         """
         Configure the exposure settings for single camera.
         Settings: disable automatic exposure, set exposure time
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
-            exposure_config (dict): The dictionary of exposure settings.
 
         Returns:
             None
         """
         serial_number = self.serial_number
-        nodemap: PySpin.NodeMap = cam.GetNodeMap()
+        nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
+        exposure_config = self.full_config['exposure_settings']
 
         exposure_auto = PySpin.CEnumerationPtr(nodemap.GetNode('ExposureAuto'))
         if PySpin.IsWritable(exposure_auto):
@@ -413,20 +522,17 @@ class FlirCameraSystem(SingleCameraSystem):
             logging.info('Exposure time of camera %s is set to %s',
                          serial_number, exposure_config['exposure_time'])
 
-    def _configure_gain(self, cam: PySpin.CameraPtr, gain_config: dict) -> None:
+    def _configure_gain(self) -> None:
         """
         Configure the gain settings for single camera.
         Settings: disable automatic gain, set gain db
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
-            gain_config (dict): The dictionary of gain settings.
 
         Returns:
             None
         """
         serial_number = self.serial_number
-        nodemap: PySpin.NodeMap = cam.GetNodeMap()
+        nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
+        gain_config = self.full_config['gain_settings']
 
         gain_auto = PySpin.CEnumerationPtr(nodemap.GetNode('GainAuto'))
         if PySpin.IsWritable(gain_auto):
@@ -442,21 +548,18 @@ class FlirCameraSystem(SingleCameraSystem):
             logging.info('Gain of camera %s is set to %s',
                          serial_number, gain_config['gain_value'])
 
-    def _configure_white_balance(self, cam: PySpin.CameraPtr, white_balance_config: dict) -> None:
+    def _configure_white_balance(self) -> None:
         """
         Configure the white balance settings for single camera.
         Can also set white balance to `Once`.
         Settings: disable automatic white balance, set white balance red and blue ratio.
 
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
-            white_balance_config (dict): The dictionary of white balance settings.
-
         Returns:
             None
         """
         serial_number = self.serial_number
-        nodemap: PySpin.NodeMap = cam.GetNodeMap()
+        nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
+        white_balance_config = self.full_config['white_balance_settings']
         node_balance_white_auto = PySpin.CEnumerationPtr(nodemap.GetNode('BalanceWhiteAuto'))
         if PySpin.IsWritable(node_balance_white_auto):
             node_balance_white_auto_value =  \
@@ -483,133 +586,3 @@ class FlirCameraSystem(SingleCameraSystem):
                 node_balance_ratio.SetValue(white_balance_config['white_balance_red_ratio'])
                 logging.info('White balance red ratio of camera %s is set to %f.',
                              serial_number, white_balance_config['white_balance_red_ratio'])
-
-    def _configure_gpio_primary(self, cam: PySpin.CameraPtr, gpio_primary_config: dict) -> None:
-        """
-        Configure the GPIO settings to primary for single camera.
-        Settings: trigger mode, line selector, line mode, line source
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
-            gpio_primary_config (dict): The dictionary of GPIO primary settings.
-
-        Returns:
-            None
-        """
-        serial_number = self.serial_number
-        nodemap: PySpin.NodeMap = cam.GetNodeMap()
-        trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
-        if PySpin.IsWritable(trigger_mode):
-            trigger_mode_on = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName(gpio_primary_config['trigger_mode']))
-            trigger_mode.SetIntValue(trigger_mode_on.GetValue())
-            logging.info('Trigger mode of primary camera %s is set to %s',
-                         serial_number, gpio_primary_config['trigger_mode'])
-
-        line_selector = PySpin.CEnumerationPtr(nodemap.GetNode('LineSelector'))
-        if PySpin.IsWritable(line_selector):
-            line_selector_entry = PySpin.CEnumEntryPtr(line_selector.GetEntryByName(gpio_primary_config['line_selector']))
-            line_selector.SetIntValue(line_selector_entry.GetValue())
-            logging.info('Line selector of primary camera %s is set to %s',
-                         serial_number, gpio_primary_config['line_selector'])
-
-        line_mode = PySpin.CEnumerationPtr(nodemap.GetNode('LineMode'))
-        if PySpin.IsWritable(line_mode):
-            line_mode_entry = PySpin.CEnumEntryPtr(line_mode.GetEntryByName(gpio_primary_config['line_mode']))
-            line_mode.SetIntValue(line_mode_entry.GetValue())
-            logging.info('Line mode of primary camera %s is set to %s',
-                         serial_number, gpio_primary_config['line_mode'])
-
-        line_source = PySpin.CEnumerationPtr(nodemap.GetNode('LineSource'))
-        if PySpin.IsWritable(line_source):
-            line_source_entry = PySpin.CEnumEntryPtr(line_source.GetEntryByName(gpio_primary_config['line_source']))
-            line_source.SetIntValue(line_source_entry.GetValue())
-            logging.info('Line source of primary camera %s is set to %s',
-                         serial_number, gpio_primary_config['line_source'])
-
-    def _configure_gpio_secondary(self, cam: PySpin.CameraPtr, gpio_secondary_config: dict) -> None:
-        """
-        Configure the GPIO settings to secondary for single camera.
-        Settings: trigger selector, trigger mode, trigger source, trigger overlap, trigger source
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
-            gpio_secondary_config (dict): The dictionary of GPIO secondary settings.
-
-        Returns:
-            None
-        """
-        serial_number = self.serial_number
-        nodemap: PySpin.NodeMap = cam.GetNodeMap()
-
-        trigger_selector = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerSelector'))
-        if PySpin.IsWritable(trigger_selector):
-            trigger_selector_entry = \
-                PySpin.CEnumEntryPtr(trigger_selector.GetEntryByName(gpio_secondary_config['trigger_selector']))
-            trigger_selector.SetIntValue(trigger_selector_entry.GetValue())
-            logging.info('Trigger selector of secondary camera %s is set to %s',
-                         serial_number, gpio_secondary_config['trigger_selector'])
-
-        trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
-        if PySpin.IsWritable(trigger_mode):
-            trigger_mode_on = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName(gpio_secondary_config['trigger_mode']))
-            trigger_mode.SetIntValue(trigger_mode_on.GetValue())
-            logging.info('Trigger mode of secondary camera %s is set to %s',
-                         serial_number, gpio_secondary_config['trigger_mode'])
-
-        trigger_source = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerSource'))
-        if PySpin.IsWritable(trigger_source):
-            trigger_source_entry = \
-                PySpin.CEnumEntryPtr(trigger_source.GetEntryByName(gpio_secondary_config['trigger_source']))
-            trigger_source.SetIntValue(trigger_source_entry.GetValue())
-            logging.info('Trigger source of secondary camera %s is set to %s',
-                         serial_number, gpio_secondary_config['trigger_source'])
-
-        trigger_overlap = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerOverlap'))
-        if PySpin.IsWritable(trigger_overlap):
-            trigger_overlap_entry = \
-                PySpin.CEnumEntryPtr(trigger_overlap.GetEntryByName(gpio_secondary_config['trigger_overlap']))
-            trigger_overlap.SetIntValue(trigger_overlap_entry.GetValue())
-            logging.info('Trigger overlap of secondary camera %s is set to %s',
-                         serial_number, gpio_secondary_config['trigger_overlap'])
-
-        line_selector = PySpin.CEnumerationPtr(nodemap.GetNode('LineSelector'))
-        if PySpin.IsWritable(line_selector):
-            line_selector_entry = \
-                PySpin.CEnumEntryPtr(line_selector.GetEntryByName(gpio_secondary_config['trigger_source']))
-            line_selector.SetIntValue(line_selector_entry.GetValue())
-            logging.info('Line selector of secondary camera %s is set to %s',
-                         serial_number, gpio_secondary_config['trigger_source'])
-
-    def _enable_trigger_mode(self, cam: PySpin.CameraPtr) -> None:
-        """
-        Enable trigger mode for single camera.
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
-
-        Returns:
-            None
-        """
-        serial_number = self.serial_number
-        nodemap: PySpin.NodeMap = cam.GetNodeMap()
-        trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
-        trigger_mode_on = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName('On'))
-        trigger_mode.SetIntValue(trigger_mode_on.GetValue())
-        logging.info('Trigger mode of camera %s is enabled', serial_number)
-
-    def _disable_trigger_mode(self, cam: PySpin.CameraPtr) -> None:
-        """
-        Disable trigger mode for single camera.
-
-        Args:
-            cam (PySpin.CameraPtr): The camera object to configure.
-
-        Returns:
-            None
-        """
-        serial_number = self.serial_number
-        nodemap: PySpin.NodeMap = cam.GetNodeMap()
-        trigger_mode = PySpin.CEnumerationPtr(nodemap.GetNode('TriggerMode'))
-        trigger_mode_off = PySpin.CEnumEntryPtr(trigger_mode.GetEntryByName('Off'))
-        trigger_mode.SetIntValue(trigger_mode_off.GetValue())
-        logging.info('Trigger mode of camera %s is disabled', serial_number)
