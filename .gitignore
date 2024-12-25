@@ -127,7 +127,7 @@ dmypy.json
 *.bat
 
 # Data saved for this repository
-./src/Db/*
+Db
 
 # run GitHub workflow locally program
 act.exe
