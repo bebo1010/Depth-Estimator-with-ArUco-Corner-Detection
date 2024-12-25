@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from camera_objects.two_cameras.dual_realsense_system import DualRealsenseSystem
-from camera_objects.two_cameras.realsense_camera_system import RealsenseCameraSystem
+from src.camera_objects import DualRealsenseSystem
+from src.camera_objects import RealsenseCameraSystem
 
 class TestDualRealsenseSystem(unittest.TestCase):
     """
@@ -22,7 +22,7 @@ class TestDualRealsenseSystem(unittest.TestCase):
         logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
 
         # Patch rs.pipeline
-        patcher = patch('camera_objects.two_cameras.realsense_camera_system.rs.pipeline')
+        patcher = patch('src.camera_objects.two_cameras.realsense_camera_system.rs.pipeline')
         self.addCleanup(patcher.stop)
         self.mock_pipeline = patcher.start()
 

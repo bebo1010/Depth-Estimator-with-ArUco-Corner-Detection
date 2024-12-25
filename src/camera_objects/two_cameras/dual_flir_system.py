@@ -5,8 +5,8 @@ from typing import Tuple
 
 import numpy as np
 
-from camera_objects.two_cameras.two_cameras_system import TwoCamerasSystem
-from camera_objects.single_camera.flir_camera_system import FlirCameraSystem
+from src.camera_objects.single_camera import FlirCameraSystem
+from .two_cameras_system import TwoCamerasSystem
 
 class DualFlirSystem(TwoCamerasSystem):
     """

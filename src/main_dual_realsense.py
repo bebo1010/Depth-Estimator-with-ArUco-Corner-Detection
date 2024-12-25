@@ -5,10 +5,8 @@ Main function to start the application with Realsense camera system.
 if __name__ == "__main__":
     import pyrealsense2 as rs
 
-    from ui_objects.opencv_ui_controller import OpencvUIController
-    from camera_objects.two_cameras.dual_realsense_system import DualRealsenseSystem
-    from camera_objects.two_cameras.realsense_camera_system import RealsenseCameraSystem
-
+    from .ui_objects import OpencvUIController
+    from .camera_objects import RealsenseCameraSystem, DualRealsenseSystem
     # D415
     FOCAL_LENGTH = 908.36  # in pixels
     BASELINE = 55  # in mm

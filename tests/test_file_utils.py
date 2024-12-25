@@ -2,17 +2,29 @@
 Unit tests for the file_utils module.
 """
 
+import logging
 import unittest
 from unittest.mock import patch, mock_open
 
 import yaml
 
-from utils.file_utils import get_starting_index, parse_yaml_config
+from src.utils.file_utils import get_starting_index, parse_yaml_config
 
 class TestFileUtils(unittest.TestCase):
     """
     Test suite for the file_utils module.
     """
+    def setUp(self):
+        """
+        Set up the test environment before each test.
+        """
+        logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
+
+    def tearDown(self):
+        """
+        Clean up the test environment after each test.
+        """
+        logging.disable(logging.NOTSET)  # Re-enable logging after tests
 
     @patch('os.path.exists')
     @patch('os.listdir')

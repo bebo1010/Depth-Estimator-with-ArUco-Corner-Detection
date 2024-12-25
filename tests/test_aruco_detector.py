@@ -5,7 +5,7 @@ Unit tests for the ArUcoDetector class.
 import unittest
 import numpy as np
 import cv2
-from aruco_detector.aruco_detector import ArUcoDetector
+from src.aruco_detector import ArUcoDetector
 
 class TestArUcoDetector(unittest.TestCase):
     """

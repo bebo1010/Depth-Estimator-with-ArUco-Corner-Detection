@@ -8,8 +8,8 @@ import cv2
 import numpy as np
 import PySpin
 
-from camera_objects.single_camera.single_camera_system import SingleCameraSystem
-from utils.file_utils import parse_yaml_config
+from src.utils import parse_yaml_config
+from .single_camera_system import SingleCameraSystem
 
 class FlirCameraSystem(SingleCameraSystem):
     """
