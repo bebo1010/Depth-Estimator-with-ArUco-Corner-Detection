@@ -12,6 +12,10 @@ __all__:
 from .two_cameras_system import TwoCamerasSystem
 from .realsense_camera_system import RealsenseCameraSystem
 from .dual_realsense_system import DualRealsenseSystem
-from .dual_flir_system import DualFlirSystem
-
-__all__ = ['TwoCamerasSystem', 'RealsenseCameraSystem', 'DualRealsenseSystem', 'DualFlirSystem']
+__all__ = ['TwoCamerasSystem', 'RealsenseCameraSystem', 'DualRealsenseSystem']
+try:
+    import PySpin
+    from .dual_flir_system import DualFlirSystem
+    __all__.append('DualFlirSystem')
+except ModuleNotFoundError:
+    pass

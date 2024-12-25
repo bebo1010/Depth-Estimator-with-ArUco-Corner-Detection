@@ -8,9 +8,10 @@ __all__:
 """
 
 from .single_camera_system import SingleCameraSystem
+__all__ = ['SingleCameraSystem']
 try:
     import PySpin
     from .flir_camera_system import FlirCameraSystem
+    __all__.append('FlirCameraSystem')
 except ModuleNotFoundError:
     pass
-__all__ = ['SingleCameraSystem', 'FlirCameraSystem']
