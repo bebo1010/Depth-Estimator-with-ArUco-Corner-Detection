@@ -8,6 +8,9 @@ __all__:
 """
 
 from .single_camera_system import SingleCameraSystem
-from .flir_camera_system import FlirCameraSystem
-
+try:
+    import PySpin
+    from .flir_camera_system import FlirCameraSystem
+except ModuleNotFoundError:
+    pass
 __all__ = ['SingleCameraSystem', 'FlirCameraSystem']
