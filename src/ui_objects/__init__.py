@@ -6,6 +6,6 @@ __all__:
     List of public objects of this module, as interpreted by import *.
 """
 
-from opencv_ui_controller import OpencvUIController
+from .opencv_ui_controller import OpencvUIController
 
 __all__ = ["OpencvUIController"]

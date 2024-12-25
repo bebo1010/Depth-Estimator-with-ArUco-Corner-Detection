@@ -9,7 +9,7 @@ import numpy as np
 import PySpin
 
 from .single_camera_system import SingleCameraSystem
-from ...utils.file_utils import parse_yaml_config
+from src.utils import parse_yaml_config
 
 class FlirCameraSystem(SingleCameraSystem):
     """

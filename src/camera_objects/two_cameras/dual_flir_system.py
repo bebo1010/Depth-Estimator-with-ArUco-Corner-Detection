@@ -2,11 +2,14 @@
 Module for dual FLIR camera system.
 """
 from typing import Tuple
+import os, sys, pathlib
+target_path = pathlib.Path(os.path.abspath(__file__)).parents[3]
+sys.path.append(target_path)
 
 import numpy as np
 
 from .two_cameras_system import TwoCamerasSystem
-from ..single_camera.flir_camera_system import FlirCameraSystem
+from src.camera_objects.single_camera import FlirCameraSystem
 
 class DualFlirSystem(TwoCamerasSystem):
     """
