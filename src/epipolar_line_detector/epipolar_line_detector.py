@@ -70,7 +70,7 @@ class EpipolarLineDetector:
             self.detector_index = (self.detector_index - 1) % len(self.detectors)
         self.set_feature_detector(self.detectors[self.detector_index][1])
 
-    def compute_epilines(self,
+    def compute_epilines_from_scene(self,
                          left_image: np.ndarray,
                          right_image: np.ndarray
                          ) -> Tuple[np.ndarray, np.ndarray]:

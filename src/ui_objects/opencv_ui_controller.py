@@ -372,7 +372,7 @@ class OpencvUIController():
                 left_colored, right_colored = self.epipolar_detector.compute_epilines_from_corners(
                     left_colored, right_colored, matching_corners_left, matching_corners_right)
             else:
-                left_colored, right_colored = self.epipolar_detector.compute_epilines(
+                left_colored, right_colored = self.epipolar_detector.compute_epilines_from_scene(
                     left_colored, right_colored)
 
         if 0 <= self.mouse_y < 480:
