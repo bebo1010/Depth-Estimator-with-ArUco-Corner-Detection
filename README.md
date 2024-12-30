@@ -18,7 +18,10 @@
 ## Functionality
 - [x] Read two Realsense IR camera streams and Realsense depth stream
 - [x] Detect ArUco markers for each stream
-- [x] Compute depths with detected ArUco markers and get depth from Realsense depth stream
+    - [x] Compute depths with detected ArUco markers and get depth from Realsense depth stream
+- [x] Display horizontal lines, vertical lines, and epipolar lines
+    - [x] Show epipolar lines from marker corners if ArUco markers are detected. If not, show epipolar lines from detected key points
+    - [x] Default algorithm for detecting key points is `ORB`, can be switched to `SIFT`
 - [x] Include interfaces for other cameras
     - [x] Interface for intel realsense cameras
     - [x] Interface for FLIR cameras
@@ -40,10 +43,7 @@
 
 ## Goal
 
-- [ ] Display Epipolar lines with `e`
-    - [x] Use `SIFT` or `ORB` to detect keypoints, and press `n` or `p` to switch between
-    - [ ] Support `FAST` algorithm
-    - [ ] Display epipolar lines from ArUco corner points if markers are detected
+To be added
 
 ## File Structure
 
