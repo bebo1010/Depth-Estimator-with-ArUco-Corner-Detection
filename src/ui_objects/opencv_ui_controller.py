@@ -9,8 +9,9 @@ from typing import Tuple, Optional
 import cv2
 import numpy as np
 
-from src.camera_objects import TwoCamerasSystem
 from src.aruco_detector import ArUcoDetector
+from src.epipolar_line_detector import EpipolarLineDetector
+from src.camera_objects import TwoCamerasSystem
 from src.utils.file_utils import get_starting_index
 
 class OpencvUIController():
@@ -66,6 +67,9 @@ class OpencvUIController():
         self.draw_horizontal_lines = False
         self.draw_vertical_lines = False
 
+        self.epipolar_detector = EpipolarLineDetector()
+        self.draw_epipolar_lines = False
+
     def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
         """
         Set the camera system for the application.
@@ -90,6 +94,9 @@ class OpencvUIController():
         returns:
         No return.
         """
+        cv2.namedWindow("Combined View (2x2)")
+        self._update_window_title()
+
         while True:
             success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
             _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
@@ -114,6 +121,26 @@ class OpencvUIController():
                 self.draw_horizontal_lines = not self.draw_horizontal_lines
             if key == ord('v') or key == ord('V'):  # Toggle vertical lines
                 self.draw_vertical_lines = not self.draw_vertical_lines
+            if key == ord('e') or key == ord('E'):  # Toggle epipolar lines
+                self.draw_epipolar_lines = not self.draw_epipolar_lines
+                self._update_window_title()
+            if self.draw_epipolar_lines:
+                if key == ord('n'):  # Switch to next detector
+                    self.epipolar_detector.switch_detector('n')
+                    self._update_window_title()
+                if key == ord('p'):  # Switch to previous detector
+                    self.epipolar_detector.switch_detector('p')
+                    self._update_window_title()
+
+    def _update_window_title(self) -> None:
+        """
+        Update the window title with the current detector name if epipolar lines are shown.
+        """
+        if self.draw_epipolar_lines:
+            detector_name = self.epipolar_detector.detectors[self.epipolar_detector.detector_index][0]
+            cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Detector: {detector_name}")
+        else:
+            cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2)")
 
     def _setup_directories(self) -> None:
         """
@@ -336,6 +363,9 @@ class OpencvUIController():
                          "Mean Disparity: %.2f, Variance: %.2f, Disparities: %s",
                          marker_id, depth_mm_calc, depth_mm_from_image,
                          mean_disparity, variance_disparity, disparities.tolist())
+
+        if self.draw_epipolar_lines:
+            left_colored, right_colored = self.epipolar_detector.compute_epilines(left_colored, right_colored)
 
         if 0 <= self.mouse_y < 480:
             if 0 <= self.mouse_x < 640:
