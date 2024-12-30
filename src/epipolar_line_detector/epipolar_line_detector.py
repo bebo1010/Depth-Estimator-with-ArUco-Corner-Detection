@@ -154,8 +154,16 @@ class EpipolarLineDetector:
         right_image_with_lines : numpy.ndarray
             The right image with epipolar lines drawn.
         """
+        # Ensure points are in the correct shape and type
+        points_left = np.asarray(corners_left, dtype=np.float32).reshape(-1, 2)
+        points_right = np.asarray(corners_right, dtype=np.float32).reshape(-1, 2)
+
         if self.fundamental_matrix is None:
-            self.fundamental_matrix = self._compute_fundamental_matrix(corners_left, corners_right)
+            self.fundamental_matrix, _ = cv2.findFundamentalMat(points_left, points_right,
+                                                        method=cv2.FM_RANSAC,
+                                                        ransacReprojThreshold=3,
+                                                        confidence=0.99,
+                                                        maxIters=100)
 
         points_left = corners_left.reshape(-1, 2)
         points_right = corners_right.reshape(-1, 2)
@@ -167,36 +175,6 @@ class EpipolarLineDetector:
         right_image_with_lines = self._draw_epilines(right_image, epilines_right, points_right)
 
         return left_image_with_lines, right_image_with_lines
-
-    def _compute_fundamental_matrix(self,
-                                    points_left: np.ndarray,
-                                    points_right: np.ndarray) -> np.ndarray:
-        """
-        Computes the fundamental matrix from the matched feature points.
-
-        Parameters
-        ----------
-        points_left : numpy.ndarray
-            Points from the left image.
-        points_right : numpy.ndarray
-            Points from the right image.
-
-        Returns
-        -------
-        fundamental_matrix : numpy.ndarray
-            The computed fundamental matrix.
-        """
-        # Ensure points are in the correct shape and type
-        points_left = np.asarray(points_left, dtype=np.float32).reshape(-1, 2)
-        points_right = np.asarray(points_right, dtype=np.float32).reshape(-1, 2)
-
-        # Compute the fundamental matrix
-        fundamental_matrix, _ = cv2.findFundamentalMat(points_left, points_right,
-                                                       method=cv2.FM_RANSAC,
-                                                       ransacReprojThreshold=3,
-                                                       confidence=0.99,
-                                                       maxIters=100)
-        return fundamental_matrix
 
     def _draw_epilines(self, image: np.ndarray, epilines: np.ndarray, points: np.ndarray) -> np.ndarray:
         """
