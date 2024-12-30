@@ -31,7 +31,8 @@ class EpipolarLineDetector:
             # ("SURF", cv2.xfeatures2d.SURF_create()),
             # ("FAST", cv2.FastFeatureDetector_create()),
             # ("BRIEF", cv2.xfeatures2d.BriefDescriptorExtractor_create()),
-            ("ORB", cv2.ORB_create())
+            ("ORB", cv2.ORB_create()),
+            # ("KAZE", cv2.KAZE_create())
         ]
         self.set_feature_detector(self.detectors[self.detector_index][1])
 
