@@ -18,7 +18,10 @@
 ## Functionality
 - [x] Read two Realsense IR camera streams and Realsense depth stream
 - [x] Detect ArUco markers for each stream
-- [x] Compute depths with detected ArUco markers and get depth from Realsense depth stream
+    - [x] Compute depths with detected ArUco markers and get depth from Realsense depth stream
+- [x] Display horizontal lines, vertical lines, and epipolar lines
+    - [x] Show epipolar lines from marker corners if ArUco markers are detected. If not, show epipolar lines from detected key points
+    - [x] Default algorithm for detecting key points is `ORB`, can be switched to `SIFT`
 - [x] Include interfaces for other cameras
     - [x] Interface for intel realsense cameras
     - [x] Interface for FLIR cameras
@@ -27,19 +30,20 @@
     - [x] ArUco detector
     - [x] Camera systems (not possible for FLIR cameras)
     - [x] Utility functions
+    - [ ] Epipolar line detector
 
 ### buttons for opencv_ui_controller.py
 
 - `h` or `H` to show horizontal lines
 - `v` or `V` to show vertical lines
+- `e` or `E` to show epipolar lines
+    - `n`, `N`, `p`, or `P` to change algorithm
 - `s` or `S` to save the images
 - `esc` to close program
 
 ## Goal
 
-Write another functionality to display epipolar line
-Maybe use `e` to display or not
-Could use SIFT or SURF to detect correspnding points
+To be added
 
 ## File Structure
 
@@ -59,11 +63,13 @@ Could use SIFT or SURF to detect correspnding points
 | `src/main_dual_realsense.py` | main function for starting application with dual realsense camera system |
 | `src/main_flir.py` | main function for starting application with FLIR cameras |
 | `src/main_realsense.py` | main function for starting application with realsense camera |
+| `src/epipolar_line_detector/epipolar_line_detector.py` | class for detecting epipolar lines |
 | `tests/test_aruco_detector.py` | unit test for aruco detector |
 | `tests/test_dual_realsense_system.py` | unit test for dual realsense camera system |
 | `tests/test_realsense_camera_system.py` | unit test for realsense camera system |
 | `tests/test_file_utils.py` | unit test for file utilities |
-| `pyproject.toml` |configuration file for the project|
+| `pyproject.toml` | configuration file for the project |
+
 
 > [!NOTE]
 > config for ORYX cameras are custom made, as the trigger lines can be connected differently.
@@ -107,6 +113,9 @@ Could use SIFT or SURF to detect correspnding points
 │   │       │   ├── right_image1.png
 │   │       │   └── ...
 │   │       └── aruco_depth_log.txt
+│   ├── epipolar_line_detector/
+│   │   ├── __init__.py
+│   │   └── epipolar_line_detector.py
 │   ├── ui_objects/
 │   │   ├── __init__.py
 │   │   └── opencv_ui_controller.py

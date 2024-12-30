@@ -9,8 +9,9 @@ from typing import Tuple, Optional
 import cv2
 import numpy as np
 
-from src.camera_objects import TwoCamerasSystem
 from src.aruco_detector import ArUcoDetector
+from src.epipolar_line_detector import EpipolarLineDetector
+from src.camera_objects import TwoCamerasSystem
 from src.utils.file_utils import get_starting_index
 
 class OpencvUIController():
@@ -66,6 +67,9 @@ class OpencvUIController():
         self.draw_horizontal_lines = False
         self.draw_vertical_lines = False
 
+        self.epipolar_detector = EpipolarLineDetector()
+        self.draw_epipolar_lines = False
+
     def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
         """
         Set the camera system for the application.
@@ -90,6 +94,9 @@ class OpencvUIController():
         returns:
         No return.
         """
+        cv2.namedWindow("Combined View (2x2)")
+        self._update_window_title()
+
         while True:
             success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
             _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
@@ -114,6 +121,26 @@ class OpencvUIController():
                 self.draw_horizontal_lines = not self.draw_horizontal_lines
             if key == ord('v') or key == ord('V'):  # Toggle vertical lines
                 self.draw_vertical_lines = not self.draw_vertical_lines
+            if key == ord('e') or key == ord('E'):  # Toggle epipolar lines
+                self.draw_epipolar_lines = not self.draw_epipolar_lines
+                self._update_window_title()
+            if self.draw_epipolar_lines:
+                if key == ord('n'):  # Switch to next detector
+                    self.epipolar_detector.switch_detector('n')
+                    self._update_window_title()
+                if key == ord('p'):  # Switch to previous detector
+                    self.epipolar_detector.switch_detector('p')
+                    self._update_window_title()
+
+    def _update_window_title(self) -> None:
+        """
+        Update the window title with the current detector name if epipolar lines are shown.
+        """
+        if self.draw_epipolar_lines:
+            detector_name = self.epipolar_detector.detectors[self.epipolar_detector.detector_index][0]
+            cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Detector: {detector_name}")
+        else:
+            cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2)")
 
     def _setup_directories(self) -> None:
         """
@@ -305,17 +332,20 @@ class OpencvUIController():
         left_colored = cv2.cvtColor(left_gray_image, cv2.COLOR_GRAY2BGR)
         right_colored = cv2.cvtColor(right_gray_image, cv2.COLOR_GRAY2BGR)
 
-        # Draw horizontal lines if the flag is set
-        if self.draw_horizontal_lines:
-            for y in range(0, left_colored.shape[0], 20):  # Adjust the step size as needed
-                cv2.line(left_colored, (0, y), (left_colored.shape[1], y), (0, 0, 255), 1)
-                cv2.line(right_colored, (0, y), (right_colored.shape[1], y), (0, 0, 255), 1)
+        def draw_lines(image, step, orientation):
+            for i in range(0, image.shape[0 if orientation == 'horizontal' else 1], step):
+                if orientation == 'horizontal':
+                    cv2.line(image, (0, i), (image.shape[1], i), (0, 0, 255), 1)
+                else:
+                    cv2.line(image, (i, 0), (i, image.shape[0]), (0, 0, 255), 1)
 
-        # Draw vertical lines if the flag is set
+        if self.draw_horizontal_lines:
+            draw_lines(left_colored, 20, 'horizontal')
+            draw_lines(right_colored, 20, 'horizontal')
+
         if self.draw_vertical_lines:
-            for x in range(0, left_colored.shape[1], 20):  # Adjust the step size as needed
-                cv2.line(left_colored, (x, 0), (x, left_colored.shape[0]), (0, 0, 255), 1)
-                cv2.line(right_colored, (x, 0), (x, right_colored.shape[0]), (0, 0, 255), 1)
+            draw_lines(left_colored, 20, 'vertical')
+            draw_lines(right_colored, 20, 'vertical')
 
         first_depth_colormap = np.zeros_like(left_colored) if first_depth_image is None else \
             cv2.applyColorMap(cv2.convertScaleAbs(first_depth_image, alpha=0.03), cv2.COLORMAP_JET)
@@ -336,6 +366,14 @@ class OpencvUIController():
                          "Mean Disparity: %.2f, Variance: %.2f, Disparities: %s",
                          marker_id, depth_mm_calc, depth_mm_from_image,
                          mean_disparity, variance_disparity, disparities.tolist())
+
+        if self.draw_epipolar_lines:
+            if len(matching_ids_result) > 0 and self.epipolar_detector.fundamental_matrix is not None:
+                left_colored, right_colored = self.epipolar_detector.compute_epilines_from_corners(
+                    left_colored, right_colored, matching_corners_left, matching_corners_right)
+            else:
+                left_colored, right_colored = self.epipolar_detector.compute_epilines_from_scene(
+                    left_colored, right_colored)
 
         if 0 <= self.mouse_y < 480:
             if 0 <= self.mouse_x < 640:
