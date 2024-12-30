@@ -368,7 +368,7 @@ class OpencvUIController():
                          mean_disparity, variance_disparity, disparities.tolist())
 
         if self.draw_epipolar_lines:
-            if len(matching_ids_result) > 0:
+            if len(matching_ids_result) > 0 and self.epipolar_detector.fundamental_matrix is not None:
                 left_colored, right_colored = self.epipolar_detector.compute_epilines_from_corners(
                     left_colored, right_colored, matching_corners_left, matching_corners_right)
             else:
