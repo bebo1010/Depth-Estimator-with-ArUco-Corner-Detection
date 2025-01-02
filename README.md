@@ -155,4 +155,27 @@ To be added
 │   └── test_realsense_camera_system.py
 ├── README.md
 └── pyproject.toml
-````
+```
+
+## Note
+- To run linting check:
+```bash
+python -m pylint ./src/**/*.py --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=30 --max-attribute=15
+```
+> [!NOTE]
+> `E1101`: No member error. Suppressing this for opencv-python and pyrealsense2 packages.
+> `E0611`: No name in module error.  Suppressing this for opencv-python and pyrealsense2 packages.
+> `E0401`: Unable to import error. Suppressing this for unable to install PySpin on workflow dispatch.
+> `E0633`: Unpacking non sequence error. Suppressing this for ArUco detector.
+> `R0801`: Duplicate code between files warning. Suppressing this for main functions.
+> `max-line-length`: Limits max characters per line.
+> `max-args`: Limits max arguments for a function.
+> `max-locals`: Limits max local variables within a function.
+> `max-attribute`: Limits max instance attribute for a class.
+
+- To run unit tests:
+```bash
+python -m unittest discover -s ./tests -v
+```
+> [!NOTE]
+> discover all the unit tests in `./test` and run all
