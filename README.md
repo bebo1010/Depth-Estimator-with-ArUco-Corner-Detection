@@ -42,18 +42,21 @@
 - [x] Read two Realsense IR camera streams and Realsense depth stream
 - [x] Detect ArUco markers for each stream
     - [x] Compute depths with detected ArUco markers and get depth from Realsense depth stream
-- [x] Display horizontal lines, vertical lines, and epipolar lines
-    - [x] Show epipolar lines from marker corners if ArUco markers are detected. If not, show epipolar lines from detected key points
-    - [x] Default algorithm for detecting key points is `ORB`, can be switched to `SIFT`
 - [x] Include interfaces for other cameras
     - [x] Interface for intel realsense cameras
     - [x] Interface for FLIR cameras
     - [x] Add support for multiple realsense cameras
+- [x] Display horizontal lines, vertical lines, and epipolar lines
+    - [x] Show epipolar lines from marker corners if ArUco markers are detected. If not, show epipolar lines from detected key points
+    - [x] Default algorithm for detecting key points is `ORB`, can be switched to `SIFT`
+- [ ] Chessboard calibration for stereo camera
+    - [ ] Show reprojection error per image
 - [x] Unit Tests
     - [x] ArUco detector
     - [x] Camera systems (not possible for FLIR cameras)
     - [x] Utility functions
-    - [ ] Epipolar line detector
+    - [x] Epipolar line detector
+    - [ ] Chessboard Calibration
 
 ### buttons for opencv_ui_controller.py
 
