@@ -69,6 +69,8 @@ class OpencvUIController():
         self.epipolar_detector = EpipolarLineDetector()
         self.draw_epipolar_lines = False
 
+        self.calibration_mode = False
+
     def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
         """
         Set the camera system for the application.
@@ -83,14 +85,23 @@ class OpencvUIController():
 
     def start(self) -> None:
         """
-        Start the application.
-        - Press `s` or `S` to save images.
-        - Press `esc` to exit.
-
-        args:
+        This method initializes the OpenCV window and enters a loop to continuously
+        capture and process images from the camera system. It handles various key
+        presses to perform actions such as saving images, toggling display options,
+        and terminating the application.
+        Key Presses:
+        - `s` or `S`: Save images. (only if not in calibration mode)
+        - `esc`: Exit the application.
+        - `h` or `H`: Toggle horizontal lines.
+        - `v` or `V`: Toggle vertical lines.
+        - `e` or `E`: Toggle epipolar lines.
+            - `n`: Switch to the next epipolar detector (only if epipolar lines are enabled).
+            - `p`: Switch to the previous epipolar detector (only if epipolar lines are enabled).
+        - `c` or `C`: Toggle calibration mode.
+            - `s` or `S`: Save chessboard images. (only if in calibration mode)
+        Args:
         No arguments.
-
-        returns:
+        Returns:
         No return.
         """
         cv2.namedWindow("Combined View (2x2)")
@@ -115,7 +126,9 @@ class OpencvUIController():
                 cv2.destroyAllWindows()
                 break
             if key == ord('s') or key == ord('S'):  # Save images
-                self._save_images(left_gray_image, right_gray_image, first_depth_image, second_depth_image)
+                if not self.calibration_mode:
+                    self._save_images(left_gray_image, right_gray_image, first_depth_image, second_depth_image)
+
             if key == ord('h') or key == ord('H'):  # Toggle horizontal lines
                 self.draw_horizontal_lines = not self.draw_horizontal_lines
             if key == ord('v') or key == ord('V'):  # Toggle vertical lines
@@ -130,6 +143,8 @@ class OpencvUIController():
                 if key == ord('p'):  # Switch to previous detector
                     self.epipolar_detector.switch_detector('p')
                     self._update_window_title()
+            if key == ord('c') or key == ord('C'):
+                self.calibration_mode = not self.calibration_mode
 
     def _update_window_title(self) -> None:
         """
