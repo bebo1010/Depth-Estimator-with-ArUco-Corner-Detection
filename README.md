@@ -24,6 +24,19 @@
         ```bash
         pip install <path_to_wheel_file>
         ```
+4. Run program
+    - To run with **single realsense** camera:
+    ```python
+    python -m src.main_realsense
+    ```
+    - To run with **dual realsense** camera:
+    ```python
+    python -m src.main_dual_realsense
+    ```
+    - To run with **dual FLIR** camera:
+    ```python
+    python -m src.main_flir
+    ```
 
 ## Functionality
 - [x] Read two Realsense IR camera streams and Realsense depth stream
