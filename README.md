@@ -66,7 +66,14 @@
 
 ## Goal
 
-To be added
+Add functionality to chessboard calibration
+- press `c` or `C` to activate calibration mode
+    - Display detected chessboard immediately
+    - press `s` or `S` to add chessboard image to collection
+        - display image counter on window title
+        - save images in disk
+        - Optional: Add figure for reviewing reprojection error
+- press `c ` or `C` again to deactivate calibration mode
 
 ## File Structure
 
