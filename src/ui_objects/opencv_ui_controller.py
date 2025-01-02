@@ -9,8 +9,7 @@ from typing import Tuple, Optional
 import cv2
 import numpy as np
 
-from src.aruco_detector import ArUcoDetector
-from src.epipolar_line_detector import EpipolarLineDetector
+from src.opencv_objects import ArUcoDetector, EpipolarLineDetector
 from src.camera_objects import TwoCamerasSystem
 from src.utils.file_utils import get_starting_index
 
