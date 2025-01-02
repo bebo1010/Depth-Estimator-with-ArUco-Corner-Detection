@@ -14,7 +14,7 @@ import unittest
 import cv2
 import numpy as np
 
-from src.epipolar_line_detector import EpipolarLineDetector
+from src.opencv_objects import EpipolarLineDetector
 
 class TestEpipolarLineDetector(unittest.TestCase):
     """

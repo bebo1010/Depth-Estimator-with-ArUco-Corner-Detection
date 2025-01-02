@@ -5,7 +5,7 @@ Unit tests for the ArUcoDetector class.
 import unittest
 import numpy as np
 import cv2
-from src.aruco_detector import ArUcoDetector
+from src.opencv_objects import ArUcoDetector
 
 class TestArUcoDetector(unittest.TestCase):
     """
