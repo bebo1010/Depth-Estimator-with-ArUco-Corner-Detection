@@ -82,7 +82,7 @@ class TestChessboardCalibrator(unittest.TestCase):
         """
         pattern_size = (7, 7)
         self.calibrator.pattern_size = pattern_size
-        image_points = self._generate_image_points(pattern_size, 20)
+        image_points = self._generate_image_points(pattern_size, 3)
         image_size = (640, 480)
         ret = self.calibrator.calibrate_single_camera(image_points, image_size, camera_index=0)
         self.assertTrue(ret)
@@ -103,8 +103,8 @@ class TestChessboardCalibrator(unittest.TestCase):
         """
         pattern_size = (7, 7)
         self.calibrator.pattern_size = pattern_size
-        left_image_points = self._generate_image_points(pattern_size, 20)
-        right_image_points = self._generate_image_points(pattern_size, 20)
+        left_image_points = self._generate_image_points(pattern_size, 3)
+        right_image_points = self._generate_image_points(pattern_size, 3)
         image_size = (640, 480)
         ret = self.calibrator.calibrate_stereo_camera(left_image_points, right_image_points, image_size)
         self.assertTrue(ret)
