@@ -9,7 +9,7 @@ from typing import Tuple, Optional
 import cv2
 import numpy as np
 
-from src.opencv_objects import ArUcoDetector, EpipolarLineDetector
+from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCalibrator
 from src.camera_objects import TwoCamerasSystem
 from src.utils.file_utils import get_starting_index
 
@@ -31,8 +31,10 @@ class OpencvUIController():
                             Tuple[int, int], float) -> np.ndarray
         _draw_on_depth_image(np.ndarray, np.ndarray, Tuple[int, int]) -> np.ndarray
         _display_image(np.ndarray, np.ndarray,
-                       np.ndarray, np.ndarray, np.ndarray,
-                       Optional[np.ndarray] = None) -> None
+                       np.ndarray, np.ndarray) -> None
+        _process_and_draw_images(np.ndarray, np.ndarray,
+                                 np.ndarray, np.ndarray, np.ndarray,
+                                 Optional[np.ndarray] = None, Optional[np.ndarray] = None) -> None
         _save_images(np.ndarray, np.ndarray, np.ndarray) -> None
     """
     def __init__(self, system_prefix: str, focal_length: float, baseline: float) -> None:
@@ -70,6 +72,9 @@ class OpencvUIController():
         self.draw_epipolar_lines = False
 
         self.calibration_mode = False
+        self.chessboard_calibrator = ChessboardCalibrator()
+        self.left_image_points = []
+        self.right_image_points = []
 
     def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
         """
@@ -89,16 +94,6 @@ class OpencvUIController():
         capture and process images from the camera system. It handles various key
         presses to perform actions such as saving images, toggling display options,
         and terminating the application.
-        Key Presses:
-        - `s` or `S`: Save images. (only if not in calibration mode)
-        - `esc`: Exit the application.
-        - `h` or `H`: Toggle horizontal lines.
-        - `v` or `V`: Toggle vertical lines.
-        - `e` or `E`: Toggle epipolar lines.
-            - `n`: Switch to the next epipolar detector (only if epipolar lines are enabled).
-            - `p`: Switch to the previous epipolar detector (only if epipolar lines are enabled).
-        - `c` or `C`: Toggle calibration mode.
-            - `s` or `S`: Save chessboard images. (only if in calibration mode)
         Args:
         No arguments.
         Returns:
@@ -112,185 +107,63 @@ class OpencvUIController():
             _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
             if not success:
                 continue
-            matching_ids_result, matching_corners_left, matching_corners_right = \
-                self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
-            self._display_image(left_gray_image, right_gray_image,
-                                matching_ids_result, matching_corners_left, matching_corners_right,
-                                first_depth_image, second_depth_image)
+
+            if self.calibration_mode:
+                self._process_and_draw_chessboard(left_gray_image, right_gray_image)
+            else:
+                matching_ids_result, matching_corners_left, matching_corners_right = \
+                    self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
+                self._process_and_draw_images(left_gray_image, right_gray_image,
+                                              matching_ids_result, matching_corners_left, matching_corners_right,
+                                              first_depth_image, second_depth_image)
 
             # Check for key presses
             key = cv2.pollKey() & 0xFF
-            if key == 27:  # ESC key
-                logging.info("Program terminated by user.")
-                self.camera_system.release()
-                cv2.destroyAllWindows()
+            if self._handle_key_presses(key, left_gray_image, right_gray_image, first_depth_image, second_depth_image):
                 break
-            if key == ord('s') or key == ord('S'):  # Save images
-                if not self.calibration_mode:
-                    self._save_images(left_gray_image, right_gray_image, first_depth_image, second_depth_image)
 
-            if key == ord('h') or key == ord('H'):  # Toggle horizontal lines
-                self.draw_horizontal_lines = not self.draw_horizontal_lines
-            if key == ord('v') or key == ord('V'):  # Toggle vertical lines
-                self.draw_vertical_lines = not self.draw_vertical_lines
-            if key == ord('e') or key == ord('E'):  # Toggle epipolar lines
-                self.draw_epipolar_lines = not self.draw_epipolar_lines
-                self._update_window_title()
-            if self.draw_epipolar_lines:
-                if key == ord('n'):  # Switch to next detector
-                    self.epipolar_detector.switch_detector('n')
-                    self._update_window_title()
-                if key == ord('p'):  # Switch to previous detector
-                    self.epipolar_detector.switch_detector('p')
-                    self._update_window_title()
-            if key == ord('c') or key == ord('C'):
-                self.calibration_mode = not self.calibration_mode
+    def _calibrate_cameras(self) -> None:
+        """
+        Calibrate the cameras using the saved chessboard images.
 
-    def _update_window_title(self) -> None:
+        Returns:
+            None.
         """
-        Update the window title with the current detector name if epipolar lines are shown.
-        """
-        if self.draw_epipolar_lines:
-            detector_name = self.epipolar_detector.detectors[self.epipolar_detector.detector_index][0]
-            cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Detector: {detector_name}")
+        if self.left_image_points and self.right_image_points:
+            image_size = (self.camera_system.get_width(), self.camera_system.get_height())
+            success = self.chessboard_calibrator.calibrate_stereo_camera(self.left_image_points,
+                                                                         self.right_image_points,
+                                                                         image_size)
+            if success:
+                logging.info("Stereo camera calibration successful.")
+                self.chessboard_calibrator.save_parameters(self.base_dir)
+            else:
+                logging.error("Stereo camera calibration failed.")
         else:
-            cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2)")
+            logging.warning("No chessboard images saved for calibration.")
 
-    def _setup_directories(self) -> None:
+    def _display_image(self,
+                       left_colored: np.ndarray,
+                       right_colored: np.ndarray,
+                       first_depth_colormap: np.ndarray,
+                       second_depth_colormap: np.ndarray) -> None:
         """
-        Make directories for storing images and logs.
-
-        args:
-        No arguments.
-
-        returns:
-        No return.
-        """
-        os.makedirs(self.base_dir, exist_ok=True)
-
-        left_ir_dir = os.path.join(self.base_dir, "left_images")
-        right_ir_dir = os.path.join(self.base_dir, "right_images")
-        depth_dir = os.path.join(self.base_dir, "depth_images")
-
-        os.makedirs(left_ir_dir, exist_ok=True)
-        os.makedirs(right_ir_dir, exist_ok=True)
-        os.makedirs(depth_dir, exist_ok=True)
-
-    def _get_starting_index(self, directory: str) -> int:
-        """
-        Get the starting index for image files in the given directory.
-
-        args:
-            directory (str): The directory to search for image files.
-
-        return:
-            int:
-                - int: The starting index for image files in the given directory.
-        """
-        if not os.path.exists(directory):
-            return 1
-        files = [f for f in os.listdir(directory) if f.endswith(".png")]
-        indices = [
-            int(os.path.splitext(f)[0].split("image")[-1])
-            for f in files
-        ]
-        return max(indices, default=0) + 1
-
-    def _setup_logging(self) -> None:
-        """
-        Setup logging for the application.
-
-        args:
-        No arguments.
-
-        returns:
-        No return.
-        """
-        log_path = os.path.join(self.base_dir, "aruco_depth_log.txt")
-        logging.basicConfig(
-            filename=log_path,
-            level=logging.INFO,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-        )
-
-    def _setup_window(self) -> None:
-        """
-        Setup OpenCV window and set the mouse callback.
-
-        args:
-        No arguments.
-
-        returns:
-        No return.
-        """
-        def _mouse_callback(event, x, y, _flags, _param):
-            """Update the mouse position."""
-            if event == cv2.EVENT_MOUSEMOVE:
-                self.mouse_x, self.mouse_y = x, y
-
-        # Create a window and set the mouse callback
-        cv2.namedWindow("Combined View (2x2)")
-        cv2.setMouseCallback("Combined View (2x2)", _mouse_callback)
-
-    def _process_disparity_and_depth(self,
-                                     matching_corners_left: np.ndarray,
-                                     matching_corners_right: np.ndarray,
-                                     depth_image: Optional[np.ndarray] = None,
-                                     center_coords: Optional[Tuple[int, int]] = None
-                                     ) -> Tuple[np.ndarray, float, float, float, Optional[float]]:
-        """
-        Calculate disparities, mean, variance, and depth from matching corners.
-
-        Optionally include depth from depth image.
+        Display the processed images on the window.
 
         Args:
-            matching_corners_left (np.ndarray): Corner points of the left image.
-            matching_corners_right (np.ndarray): Corner points of the right image.
-            depth_image (Optional[np.ndarray]): Depth image for calculating depth from image (optional).
-            center_coords (Optional[Tuple[int, int]]): Center coordinates for depth image lookup (optional).
+            left_colored (np.ndarray): Colored image of the left camera.
+            right_colored (np.ndarray): Colored image of the right camera.
+            first_depth_colormap (np.ndarray): Color-mapped first depth image.
+            second_depth_colormap (np.ndarray): Color-mapped second depth image.
 
         Returns:
-            Tuple[np.ndarray, float, float, float, Optional[float]]:
-                - Disparities between matching corners.
-                - Mean of disparities.
-                - Variance of disparities.
-                - Calculated depth in mm.
-                - Depth in mm from depth image (if provided).
+            None.
         """
-        disparities = np.abs(matching_corners_left[:, 0] - matching_corners_right[:, 0])
-        mean_disparity = np.mean(disparities)
-        variance_disparity = np.var(disparities)
+        top_row = np.hstack((left_colored, right_colored))
+        bottom_row = np.hstack((first_depth_colormap, second_depth_colormap))
+        combined_view = np.vstack((cv2.resize(top_row, (1280, 480)), cv2.resize(bottom_row, (1280, 480))))
 
-        depth_mm_calc = (self.focal_length * self.baseline) / mean_disparity if mean_disparity > 0 else 0
-
-        depth_mm_from_image = None
-        if depth_image is not None and center_coords is not None:
-            x, y = center_coords
-            depth_mm_from_image = depth_image[min(max(int(y), 0), depth_image.shape[0] - 1),
-                                              min(max(int(x), 0), depth_image.shape[1] - 1)]
-
-        return disparities, mean_disparity, variance_disparity, depth_mm_calc, depth_mm_from_image
-
-    def _draw_on_gray_image(self,
-                            image: np.ndarray,
-                            marker_id: int,
-                            center_coords: Tuple[int, int],
-                            depth_mm_calc: float) -> np.ndarray:
-        """
-        Draw marker ID and calculated depth on the grayscale image.
-
-        Args:
-            image (np.ndarray): Grayscale image to draw on.
-            marker_id (int): Detected marker ID.
-            center_coords (Tuple[int, int]): Center coordinates of the marker.
-            depth_mm_calc (float): Calculated depth in mm.
-
-        Returns:
-            np.ndarray: Grayscale image with drawn markers and depth.
-        """
-        cv2.putText(image, f"ID:{marker_id} Depth:{int(depth_mm_calc)}mm",
-                    center_coords, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-        return image
+        cv2.imshow("Combined View (2x2)", combined_view)
 
     def _draw_on_depth_image(self,
                               depth_image: np.ndarray,
@@ -320,16 +193,121 @@ class OpencvUIController():
 
         return depth_colormap
 
-    def _display_image(self,
-                       left_gray_image: np.ndarray,
-                       right_gray_image: np.ndarray,
-                       matching_ids_result: np.ndarray,
-                       matching_corners_left: np.ndarray,
-                       matching_corners_right: np.ndarray,
-                       first_depth_image: Optional[np.ndarray] = None,
-                       second_depth_image: Optional[np.ndarray] = None) -> None:
+    def _draw_on_gray_image(self,
+                            image: np.ndarray,
+                            marker_id: int,
+                            center_coords: Tuple[int, int],
+                            depth_mm_calc: float) -> np.ndarray:
         """
-        Display the processed images on the window.
+        Draw marker ID and calculated depth on the grayscale image.
+
+        Args:
+            image (np.ndarray): Grayscale image to draw on.
+            marker_id (int): Detected marker ID.
+            center_coords (Tuple[int, int]): Center coordinates of the marker.
+            depth_mm_calc (float): Calculated depth in mm.
+
+        Returns:
+            np.ndarray: Grayscale image with drawn markers and depth.
+        """
+        cv2.putText(image, f"ID:{marker_id} Depth:{int(depth_mm_calc)}mm",
+                    center_coords, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        return image
+
+    def _get_starting_index(self, directory: str) -> int:
+        """
+        Get the starting index for image files in the given directory.
+
+        args:
+            directory (str): The directory to search for image files.
+
+        return:
+            int:
+                - int: The starting index for image files in the given directory.
+        """
+        if not os.path.exists(directory):
+            return 1
+        files = [f for f in os.listdir(directory) if f.endswith(".png")]
+        indices = [
+            int(os.path.splitext(f)[0].split("image")[-1])
+            for f in files
+        ]
+        return max(indices, default=0) + 1
+
+    def _handle_key_presses(self, key: int, left_gray_image: np.ndarray, right_gray_image: np.ndarray,
+                            first_depth_image: Optional[np.ndarray], second_depth_image: Optional[np.ndarray]) -> bool:
+        """
+        Handle key presses for various actions.
+
+        Args:
+            key (int): Key code of the pressed key.
+            left_gray_image (np.ndarray): Grayscale image of the left camera.
+            right_gray_image (np.ndarray): Grayscale image of the right camera.
+            first_depth_image (Optional[np.ndarray]): First depth image.
+            second_depth_image (Optional[np.ndarray]): Second depth image.
+
+        Returns:
+            bool: True if the application should exit, False otherwise.
+        """
+        if key == 27:  # ESC key
+            logging.info("Program terminated by user.")
+            self.camera_system.release()
+            cv2.destroyAllWindows()
+            return True
+        if key == ord('s') or key == ord('S'):  # Save images
+            if self.calibration_mode:
+                self._save_chessboard_images(left_gray_image, right_gray_image)
+            else:
+                self._save_images(left_gray_image, right_gray_image, first_depth_image, second_depth_image)
+        if key == ord('h') or key == ord('H'):  # Toggle horizontal lines
+            self.draw_horizontal_lines = not self.draw_horizontal_lines
+        if key == ord('v') or key == ord('V'):  # Toggle vertical lines
+            self.draw_vertical_lines = not self.draw_vertical_lines
+        if key == ord('e') or key == ord('E'):  # Toggle epipolar lines
+            self.draw_epipolar_lines = not self.draw_epipolar_lines
+            self._update_window_title()
+        if self.draw_epipolar_lines:
+            if key == ord('n'):  # Switch to next detector
+                self.epipolar_detector.switch_detector('n')
+                self._update_window_title()
+            if key == ord('p'):  # Switch to previous detector
+                self.epipolar_detector.switch_detector('p')
+                self._update_window_title()
+        if key == ord('c') or key == ord('C'):
+            self.calibration_mode = not self.calibration_mode
+            if not self.calibration_mode:
+                self._calibrate_cameras()
+        return False
+
+    def _process_and_draw_chessboard(self, left_gray_image: np.ndarray, right_gray_image: np.ndarray) -> None:
+        """
+        Process and draw chessboard corners on the images in calibration mode.
+
+        Args:
+            left_gray_image (np.ndarray): Grayscale image of the left camera.
+            right_gray_image (np.ndarray): Grayscale image of the right camera.
+
+        Returns:
+            None.
+        """
+        ret_left, corners_left = self.chessboard_calibrator.detect_chessboard_corners(left_gray_image)
+        ret_right, corners_right = self.chessboard_calibrator.detect_chessboard_corners(right_gray_image)
+
+        if ret_left and ret_right:
+            left_colored = self.chessboard_calibrator.display_chessboard_corners(left_gray_image, corners_left)
+            right_colored = self.chessboard_calibrator.display_chessboard_corners(right_gray_image, corners_right)
+            self._display_image(left_colored, right_colored, np.zeros_like(left_colored), np.zeros_like(right_colored))
+
+    def _process_and_draw_images(self,
+                                 left_gray_image: np.ndarray,
+                                 right_gray_image: np.ndarray,
+                                 matching_ids_result: np.ndarray,
+                                 matching_corners_left: np.ndarray,
+                                 matching_corners_right: np.ndarray,
+                                 first_depth_image: Optional[np.ndarray] = None,
+                                 second_depth_image: Optional[np.ndarray] = None) -> None:
+        """
+        Process and draw on the images.
 
         Args:
             left_gray_image (np.ndarray): Grayscale image of the left camera.
@@ -404,11 +382,77 @@ class OpencvUIController():
                 second_depth_colormap = self._draw_on_depth_image(second_depth_image,
                                                                   second_depth_colormap, depth_coord)
 
-        top_row = np.hstack((left_colored, right_colored))
-        bottom_row = np.hstack((first_depth_colormap, second_depth_colormap))
-        combined_view = np.vstack((cv2.resize(top_row, (1280, 480)), cv2.resize(bottom_row, (1280, 480))))
+        self._display_image(left_colored, right_colored, first_depth_colormap, second_depth_colormap)
 
-        cv2.imshow("Combined View (2x2)", combined_view)
+    def _process_disparity_and_depth(self,
+                                     matching_corners_left: np.ndarray,
+                                     matching_corners_right: np.ndarray,
+                                     depth_image: Optional[np.ndarray] = None,
+                                     center_coords: Optional[Tuple[int, int]] = None
+                                     ) -> Tuple[np.ndarray, float, float, float, Optional[float]]:
+        """
+        Calculate disparities, mean, variance, and depth from matching corners.
+
+        Optionally include depth from depth image.
+
+        Args:
+            matching_corners_left (np.ndarray): Corner points of the left image.
+            matching_corners_right (np.ndarray): Corner points of the right image.
+            depth_image (Optional[np.ndarray]): Depth image for calculating depth from image (optional).
+            center_coords (Optional[Tuple[int, int]]): Center coordinates for depth image lookup (optional).
+
+        Returns:
+            Tuple[np.ndarray, float, float, float, Optional[float]]:
+                - Disparities between matching corners.
+                - Mean of disparities.
+                - Variance of disparities.
+                - Calculated depth in mm.
+                - Depth in mm from depth image (if provided).
+        """
+        disparities = np.abs(matching_corners_left[:, 0] - matching_corners_right[:, 0])
+        mean_disparity = np.mean(disparities)
+        variance_disparity = np.var(disparities)
+
+        depth_mm_calc = (self.focal_length * self.baseline) / mean_disparity if mean_disparity > 0 else 0
+
+        depth_mm_from_image = None
+        if depth_image is not None and center_coords is not None:
+            x, y = center_coords
+            depth_mm_from_image = depth_image[min(max(int(y), 0), depth_image.shape[0] - 1),
+                                              min(max(int(x), 0), depth_image.shape[1] - 1)]
+
+        return disparities, mean_disparity, variance_disparity, depth_mm_calc, depth_mm_from_image
+
+    def _save_chessboard_images(self, left_gray_image: np.ndarray, right_gray_image: np.ndarray) -> None:
+        """
+        Save chessboard images to disk and store image points for calibration.
+
+        Args:
+            left_gray_image (np.ndarray): Grayscale image of the left camera.
+            right_gray_image (np.ndarray): Grayscale image of the right camera.
+
+        Returns:
+            None.
+        """
+        ret_left, corners_left = self.chessboard_calibrator.detect_chessboard_corners(left_gray_image)
+        ret_right, corners_right = self.chessboard_calibrator.detect_chessboard_corners(right_gray_image)
+
+        if ret_left and ret_right:
+            self.left_image_points.append(corners_left)
+            self.right_image_points.append(corners_right)
+
+            left_chessboard_dir = os.path.join(self.base_dir, "left_chessbaord_images")
+            right_chessbaord_dir = os.path.join(self.base_dir, "right_chessbaord_images")
+
+            left_chessboard_path = os.path.join(left_chessboard_dir, f"left_chessboard{self.image_index}.png")
+            right_chessboard_path = os.path.join(right_chessbaord_dir, f"right_chessboard{self.image_index}.png")
+
+            cv2.imwrite(left_chessboard_path, left_gray_image)
+            cv2.imwrite(right_chessboard_path, right_gray_image)
+
+            logging.info("Saved chessboard images - Left: %s, Right: %s", left_chessboard_path, right_chessboard_path)
+
+            self.image_index += 1
 
     def _save_images(self,
                     left_gray_image: np.ndarray,
@@ -429,20 +473,20 @@ class OpencvUIController():
         No return.
         """
         # File paths
-        left_ir_dir = os.path.join(self.base_dir, "left_images")
-        right_ir_dir = os.path.join(self.base_dir, "right_images")
+        left_gray_dir = os.path.join(self.base_dir, "left_images")
+        right_gray_dir = os.path.join(self.base_dir, "right_images")
         depth_dir = os.path.join(self.base_dir, "depth_images")
 
         # Paths for left and right images
-        left_ir_path = os.path.join(left_ir_dir, f"left_image{self.image_index}.png")
-        right_ir_path = os.path.join(right_ir_dir, f"right_image{self.image_index}.png")
+        left_gray_path = os.path.join(left_gray_dir, f"left_image{self.image_index}.png")
+        right_gray_path = os.path.join(right_gray_dir, f"right_image{self.image_index}.png")
 
         # Save the left and right grayscale images
-        cv2.imwrite(left_ir_path, left_gray_image)
-        cv2.imwrite(right_ir_path, right_gray_image)
+        cv2.imwrite(left_gray_path, left_gray_image)
+        cv2.imwrite(right_gray_path, right_gray_image)
 
         log_message = [
-            f"Saved images - Left IR: {left_ir_path}, Right IR: {right_ir_path}"
+            f"Saved images - Left IR: {left_gray_path}, Right IR: {right_gray_path}"
         ]
 
         # Handle first depth image
@@ -474,3 +518,69 @@ class OpencvUIController():
 
         # Increment image index
         self.image_index += 1
+
+    def _setup_directories(self) -> None:
+        """
+        Make directories for storing images and logs.
+
+        args:
+        No arguments.
+
+        returns:
+        No return.
+        """
+        os.makedirs(self.base_dir, exist_ok=True)
+
+        left_ir_dir = os.path.join(self.base_dir, "left_images")
+        right_ir_dir = os.path.join(self.base_dir, "right_images")
+        depth_dir = os.path.join(self.base_dir, "depth_images")
+
+        os.makedirs(left_ir_dir, exist_ok=True)
+        os.makedirs(right_ir_dir, exist_ok=True)
+        os.makedirs(depth_dir, exist_ok=True)
+
+    def _setup_logging(self) -> None:
+        """
+        Setup logging for the application.
+
+        args:
+        No arguments.
+
+        returns:
+        No return.
+        """
+        log_path = os.path.join(self.base_dir, "aruco_depth_log.txt")
+        logging.basicConfig(
+            filename=log_path,
+            level=logging.INFO,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+        )
+
+    def _setup_window(self) -> None:
+        """
+        Setup OpenCV window and set the mouse callback.
+
+        args:
+        No arguments.
+
+        returns:
+        No return.
+        """
+        def _mouse_callback(event, x, y, _flags, _param):
+            """Update the mouse position."""
+            if event == cv2.EVENT_MOUSEMOVE:
+                self.mouse_x, self.mouse_y = x, y
+
+        # Create a window and set the mouse callback
+        cv2.namedWindow("Combined View (2x2)")
+        cv2.setMouseCallback("Combined View (2x2)", _mouse_callback)
+
+    def _update_window_title(self) -> None:
+        """
+        Update the window title with the current detector name if epipolar lines are shown.
+        """
+        if self.draw_epipolar_lines:
+            detector_name = self.epipolar_detector.detectors[self.epipolar_detector.detector_index][0]
+            cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Detector: {detector_name}")
+        else:
+            cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2)")
