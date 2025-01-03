@@ -10,7 +10,9 @@ Classes
 TestEpipolarLineDetector:
 
 """
+import logging
 import unittest
+
 import cv2
 import numpy as np
 
@@ -63,6 +65,14 @@ class TestEpipolarLineDetector(unittest.TestCase):
         cv2.line(self.right_image, (410, 410), (510, 510), (0, 0, 255), 5)  # Red line
         self.corners_left = np.array([[[100, 100], [200, 100], [200, 200], [100, 200]]], dtype=np.float32)
         self.corners_right = np.array([[[110, 110], [210, 110], [210, 210], [110, 210]]], dtype=np.float32)
+
+        logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
+
+    def tearDown(self):
+        """
+        Clean up the test environment after each test.
+        """
+        logging.disable(logging.NOTSET)  # Re-enable logging after tests
 
     def test_set_feature_detector(self):
         """

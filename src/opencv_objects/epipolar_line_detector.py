@@ -3,6 +3,7 @@ Module: epipolar_line_detector
 Description: This module contains the EpipolarLineDetector class for detecting epipolar lines using OpenCV.
 """
 from typing import Tuple
+import logging
 
 import cv2
 import numpy as np
@@ -36,6 +37,7 @@ class EpipolarLineDetector:
         ]
         self.set_feature_detector(self.detectors[self.detector_index][1])
         self.fundamental_matrix = None
+        logging.info("EpipolarLineDetector initialized with detector: %s", self.detectors[self.detector_index][0])
 
     def set_feature_detector(self, detector: cv2.Feature2D) -> None:
         """
@@ -54,6 +56,7 @@ class EpipolarLineDetector:
             The feature detector to be used.
         """
         self.detector = detector
+        logging.info("Feature detector set to: %s", type(detector).__name__)
 
     def switch_detector(self, direction: str) -> None:
         """
@@ -69,6 +72,7 @@ class EpipolarLineDetector:
         elif direction == 'p':
             self.detector_index = (self.detector_index - 1) % len(self.detectors)
         self.set_feature_detector(self.detectors[self.detector_index][1])
+        logging.info("Switched feature detector to: %s", self.detectors[self.detector_index][0])
 
     def compute_epilines_from_scene(self,
                          left_image: np.ndarray,
@@ -94,6 +98,7 @@ class EpipolarLineDetector:
         if self.detector is None:
             raise ValueError("Feature detector is not set. Use set_feature_detector method to set it.")
 
+        logging.info("Detecting features in the left and right images.")
         keypoints_left, _ = self.detector.detectAndCompute(left_image, None)
         keypoints_right, _ = self.detector.detectAndCompute(right_image, None)
 
@@ -101,6 +106,7 @@ class EpipolarLineDetector:
         points_right = cv2.KeyPoint.convert(keypoints_right)
 
         if self.fundamental_matrix is None:
+            logging.info("Computing fundamental matrix.")
             # Match features between the left and right images
             bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
             matches = bf.match(points_left, points_right)
@@ -115,6 +121,7 @@ class EpipolarLineDetector:
                                                        confidence=0.99,
                                                        maxIters=100)
 
+        logging.info("Computing epilines.")
         epilines_left = cv2.computeCorrespondEpilines(points_right, 2, self.fundamental_matrix).reshape(-1, 3)
         epilines_right = cv2.computeCorrespondEpilines(points_left, 1, self.fundamental_matrix).reshape(-1, 3)
 
@@ -126,6 +133,7 @@ class EpipolarLineDetector:
         right_image_with_lines = self._draw_epilines(right_image,
                                                      epilines_right[:num_lines], points_right[:num_lines])
 
+        logging.info("Epipolar lines computed and drawn on images.")
         return left_image_with_lines, right_image_with_lines
 
     def compute_epilines_from_corners(self,
@@ -154,6 +162,7 @@ class EpipolarLineDetector:
         right_image_with_lines : numpy.ndarray
             The right image with epipolar lines drawn.
         """
+        logging.info("Computing epilines from corners.")
         # Ensure points are in the correct shape and type
         points_left = np.asarray(corners_left, dtype=np.float32).reshape(-1, 2)
         points_right = np.asarray(corners_right, dtype=np.float32).reshape(-1, 2)
@@ -174,6 +183,7 @@ class EpipolarLineDetector:
         left_image_with_lines = self._draw_epilines(left_image, epilines_left, points_left)
         right_image_with_lines = self._draw_epilines(right_image, epilines_right, points_right)
 
+        logging.info("Epipolar lines computed and drawn on images from corners.")
         return left_image_with_lines, right_image_with_lines
 
     def _draw_epilines(self, image: np.ndarray, epilines: np.ndarray, points: np.ndarray) -> np.ndarray:
@@ -194,6 +204,7 @@ class EpipolarLineDetector:
         image_with_lines : numpy.ndarray
             The image with epipolar lines drawn.
         """
+        logging.info("Drawing epipolar lines on the image.")
         image_with_lines = image.copy()
         for r, pt in zip(epilines, points):
             color = tuple(np.random.randint(0, 255, 3).tolist())
@@ -201,4 +212,5 @@ class EpipolarLineDetector:
             x1, y1 = map(int, [image.shape[1], -(r[2] + r[0] * image.shape[1]) / r[1]])
             image_with_lines = cv2.line(image_with_lines, (x0, y0), (x1, y1), color, 1)
             image_with_lines = cv2.circle(image_with_lines, tuple(map(int, pt)), 5, color, -1)
+        logging.info("Epipolar lines drawn.")
         return image_with_lines
