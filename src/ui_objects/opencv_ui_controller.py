@@ -448,19 +448,6 @@ class OpencvUIController():
             self.image_points['left'].append(corners_left)
             self.image_points['right'].append(corners_right)
 
-            left_chessboard_dir = os.path.join(self.base_dir, "left_chessboard_images")
-            right_chessboard_dir = os.path.join(self.base_dir, "right_chessboard_images")
-
-            left_chessboard_path = os.path.join(left_chessboard_dir,
-                                                f"left_chessboard{self.chessboard_image_index}.png")
-            right_chessboard_path = os.path.join(right_chessboard_dir,
-                                                 f"right_chessboard{self.chessboard_image_index}.png")
-
-            cv2.imwrite(left_chessboard_path, left_gray_image)
-            cv2.imwrite(right_chessboard_path, right_gray_image)
-
-            logging.info("Saved chessboard images - Left: %s, Right: %s", left_chessboard_path, right_chessboard_path)
-
             save_images(self.base_dir, left_gray_image, right_gray_image,
                         self.chessboard_image_index, prefix="chessboard")
 
