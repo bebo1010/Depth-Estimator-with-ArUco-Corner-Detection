@@ -11,7 +11,7 @@ import numpy as np
 
 from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCalibrator
 from src.camera_objects import TwoCamerasSystem
-from src.utils.file_utils import get_starting_index
+from src.utils import get_starting_index, setup_directories, setup_logging, save_images
 
 class OpencvUIController():
     """
@@ -35,8 +35,6 @@ class OpencvUIController():
                                      ) -> Tuple[np.ndarray, float, float, float, Optional[float]]
         _save_chessboard_images(np.ndarray, np.ndarray) -> None
         _save_images(np.ndarray, np.ndarray, Optional[np.ndarray] = None, Optional[np.ndarray] = None) -> None
-        _setup_directories() -> None
-        _setup_logging() -> None
         _setup_window() -> None
         _update_window_title() -> None
     """
@@ -52,11 +50,13 @@ class OpencvUIController():
         """
         self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
         left_ir_dir = os.path.join(self.base_dir, "left_images")
+        left_chessboard_dir = os.path.join(self.base_dir, "left_chessboard_images")
 
-        self._setup_directories()
+        setup_directories(self.base_dir)
         self.image_index = get_starting_index(left_ir_dir)
+        self.chessboard_image_index = get_starting_index(left_chessboard_dir)
 
-        self._setup_logging()
+        setup_logging(self.base_dir)
 
         self.mouse_coords = {'x': 0, 'y': 0}
         self._setup_window()
@@ -259,8 +259,12 @@ class OpencvUIController():
         if key == ord('s') or key == ord('S'):  # Save images
             if self.calibration_mode:
                 self._save_chessboard_images(left_gray_image, right_gray_image)
+                self.chessboard_image_index += 1
             else:
-                self._save_images(left_gray_image, right_gray_image, first_depth_image, second_depth_image)
+                save_images(self.base_dir, left_gray_image, right_gray_image,
+                            self.image_index, first_depth_image, second_depth_image,
+                            prefix="ArUco")
+                self.image_index += 1
         if key == ord('h') or key == ord('H'):  # Toggle horizontal lines
             self.draw_options['horizontal_lines'] = not self.draw_options['horizontal_lines']
         if key == ord('v') or key == ord('V'):  # Toggle vertical lines
@@ -447,117 +451,18 @@ class OpencvUIController():
             left_chessboard_dir = os.path.join(self.base_dir, "left_chessboard_images")
             right_chessboard_dir = os.path.join(self.base_dir, "right_chessboard_images")
 
-            left_chessboard_path = os.path.join(left_chessboard_dir, f"left_chessboard{self.image_index}.png")
-            right_chessboard_path = os.path.join(right_chessboard_dir, f"right_chessboard{self.image_index}.png")
+            left_chessboard_path = os.path.join(left_chessboard_dir,
+                                                f"left_chessboard{self.chessboard_image_index}.png")
+            right_chessboard_path = os.path.join(right_chessboard_dir,
+                                                 f"right_chessboard{self.chessboard_image_index}.png")
 
             cv2.imwrite(left_chessboard_path, left_gray_image)
             cv2.imwrite(right_chessboard_path, right_gray_image)
 
             logging.info("Saved chessboard images - Left: %s, Right: %s", left_chessboard_path, right_chessboard_path)
 
-            self.image_index += 1
-
-    def _save_images(self,
-                    left_gray_image: np.ndarray,
-                    right_gray_image: np.ndarray,
-                    first_depth_image: Optional[np.ndarray] = None,
-                    second_depth_image: Optional[np.ndarray] = None
-                    ) -> None:
-        """
-        Save the images to disk.
-
-        args:
-        left_gray_image (np.ndarray): Grayscale image of the left camera.
-        right_gray_image (np.ndarray): Grayscale image of the right camera.
-        first_depth_image (np.ndarray): First depth image.
-        second_depth_image (np.ndarray): Second depth image.
-
-        return:
-        No return.
-        """
-        # File paths
-        left_gray_dir = os.path.join(self.base_dir, "left_images")
-        right_gray_dir = os.path.join(self.base_dir, "right_images")
-        depth_dir = os.path.join(self.base_dir, "depth_images")
-
-        # Paths for left and right images
-        left_gray_path = os.path.join(left_gray_dir, f"left_image{self.image_index}.png")
-        right_gray_path = os.path.join(right_gray_dir, f"right_image{self.image_index}.png")
-
-        # Save the left and right grayscale images
-        cv2.imwrite(left_gray_path, left_gray_image)
-        cv2.imwrite(right_gray_path, right_gray_image)
-
-        log_message = [
-            f"Saved images - Left IR: {left_gray_path}, Right IR: {right_gray_path}"
-        ]
-
-        # Handle first depth image
-        if first_depth_image is not None:
-            depth_png_path_1 = os.path.join(depth_dir, f"depth_image1_{self.image_index}.png")
-            depth_npy_path_1 = os.path.join(depth_dir, f"depth_image1_{self.image_index}.npy")
-            cv2.imwrite(depth_png_path_1, first_depth_image)
-            np.save(depth_npy_path_1, first_depth_image)
-
-            log_message.extend([
-                f"Depth PNG 1: {depth_png_path_1}",
-                f"Depth NPY 1: {depth_npy_path_1}"
-            ])
-
-        # Handle second depth image
-        if second_depth_image is not None:
-            depth_png_path_2 = os.path.join(depth_dir, f"depth_image2_{self.image_index}.png")
-            depth_npy_path_2 = os.path.join(depth_dir, f"depth_image2_{self.image_index}.npy")
-            cv2.imwrite(depth_png_path_2, second_depth_image)
-            np.save(depth_npy_path_2, second_depth_image)
-
-            log_message.extend([
-                f"Depth PNG 2: {depth_png_path_2}",
-                f"Depth NPY 2: {depth_npy_path_2}"
-            ])
-
-        # Log all the saved paths
-        logging.info(", ".join(log_message))
-
-        # Increment image index
-        self.image_index += 1
-
-    def _setup_directories(self) -> None:
-        """
-        Make directories for storing images and logs.
-
-        args:
-        No arguments.
-
-        returns:
-        No return.
-        """
-        os.makedirs(self.base_dir, exist_ok=True)
-
-        left_ir_dir = os.path.join(self.base_dir, "left_images")
-        right_ir_dir = os.path.join(self.base_dir, "right_images")
-        depth_dir = os.path.join(self.base_dir, "depth_images")
-
-        os.makedirs(left_ir_dir, exist_ok=True)
-        os.makedirs(right_ir_dir, exist_ok=True)
-        os.makedirs(depth_dir, exist_ok=True)
-
-    def _setup_logging(self) -> None:
-        """
-        Setup logging for the application.
-
-        args:
-        No arguments.
-
-        returns:
-        No return.
-        """
-        log_path = os.path.join(self.base_dir, "aruco_depth_log.txt")
-        logging.basicConfig(
-            filename=log_path,
-            level=logging.INFO,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-        )
+            save_images(self.base_dir, left_gray_image, right_gray_image,
+                        self.chessboard_image_index, prefix="chessboard")
 
     def _setup_window(self) -> None:
         """
