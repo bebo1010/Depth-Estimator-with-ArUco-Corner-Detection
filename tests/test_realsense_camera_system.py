@@ -3,6 +3,7 @@ Unit tests for the RealsenseCameraSystem class.
 """
 import logging
 import unittest
+import coverage
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -149,4 +150,13 @@ class TestRealsenseCameraSystem(unittest.TestCase):
         mock_config_instance.enable_device.assert_called_once_with(serial_number)
 
 if __name__ == '__main__':
+    cov = coverage.Coverage()
+    cov.start()
+
     unittest.main()
+
+    cov.stop()
+    cov.save()
+
+    cov.html_report()
+    print("Done.")

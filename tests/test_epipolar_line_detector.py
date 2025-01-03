@@ -12,6 +12,7 @@ TestEpipolarLineDetector:
 """
 import logging
 import unittest
+import coverage
 
 import cv2
 import numpy as np
@@ -121,4 +122,13 @@ class TestEpipolarLineDetector(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    cov = coverage.Coverage()
+    cov.start()
+
     unittest.main()
+
+    cov.stop()
+    cov.save()
+
+    cov.html_report()
+    print("Done.")

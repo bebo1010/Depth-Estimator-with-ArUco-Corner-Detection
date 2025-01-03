@@ -6,6 +6,7 @@ import unittest
 import numpy as np
 import cv2
 from src.opencv_objects import ArUcoDetector
+import coverage
 
 class TestArUcoDetector(unittest.TestCase):
     """
@@ -64,4 +65,13 @@ class TestArUcoDetector(unittest.TestCase):
         self.assertEqual(len(matching_ids), 0)
 
 if __name__ == '__main__':
+    cov = coverage.Coverage()
+    cov.start()
+
     unittest.main()
+
+    cov.stop()
+    cov.save()
+
+    cov.html_report()
+    print("Done.")

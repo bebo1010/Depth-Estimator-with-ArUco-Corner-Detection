@@ -4,8 +4,11 @@ Unit tests for the ChessboardCalibrator class.
 
 from typing import List, Tuple
 import unittest
+import coverage
+
 import numpy as np
 import cv2
+
 from src.opencv_objects import ChessboardCalibrator
 
 class TestChessboardCalibrator(unittest.TestCase):
@@ -182,4 +185,13 @@ class TestChessboardCalibrator(unittest.TestCase):
         return image_points
 
 if __name__ == '__main__':
+    cov = coverage.Coverage()
+    cov.start()
+
     unittest.main()
+
+    cov.stop()
+    cov.save()
+
+    cov.html_report()
+    print("Done.")

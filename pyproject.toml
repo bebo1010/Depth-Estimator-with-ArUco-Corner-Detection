@@ -2,6 +2,10 @@
 addopts = ["--import-mode=importlib"]
 pythonpath = "./src"
 [tool.coverage.run]
+omit = [
+    "config.py",
+    "config-3.py",
+    ]
 branch = true
 
 [tool.coverage.report]

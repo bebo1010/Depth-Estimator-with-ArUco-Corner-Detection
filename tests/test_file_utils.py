@@ -5,6 +5,7 @@ Unit tests for the file_utils module.
 import os
 import logging
 import unittest
+import coverage
 from unittest.mock import patch, mock_open, call
 
 import yaml
@@ -175,4 +176,13 @@ class TestFileUtils(unittest.TestCase):
         mock_npy_save.assert_any_call("./test_base_dir/depth_images/depth_image2_1.npy", depth_image2)
 
 if __name__ == '__main__':
+    cov = coverage.Coverage()
+    cov.start()
+
     unittest.main()
+
+    cov.stop()
+    cov.save()
+
+    cov.html_report()
+    print("Done.")
