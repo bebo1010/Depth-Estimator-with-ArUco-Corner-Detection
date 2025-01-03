@@ -21,21 +21,24 @@ class OpencvUIController():
         __init__(str, float, float) -> None
         set_camera_system(TwoCamerasSystem) -> None
         start() -> None
+        _calibrate_cameras() -> None
+        _display_image(np.ndarray, np.ndarray, np.ndarray, np.ndarray) -> None
+        _draw_on_depth_image(np.ndarray, np.ndarray, Tuple[int, int]) -> np.ndarray
+        _draw_on_gray_image(np.ndarray, int, Tuple[int, int], float) -> np.ndarray
+        _get_starting_index(str) -> int
+        _handle_key_presses(int, np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]) -> bool
+        _process_and_draw_chessboard(np.ndarray, np.ndarray) -> None
+        _process_and_draw_images(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+                                 Optional[np.ndarray] = None, Optional[np.ndarray] = None) -> None
+        _process_disparity_and_depth(np.ndarray, np.ndarray, Optional[np.ndarray] = None,
+                                     Optional[Tuple[int, int]] = None
+                                     ) -> Tuple[np.ndarray, float, float, float, Optional[float]]
+        _save_chessboard_images(np.ndarray, np.ndarray) -> None
+        _save_images(np.ndarray, np.ndarray, Optional[np.ndarray] = None, Optional[np.ndarray] = None) -> None
         _setup_directories() -> None
         _setup_logging() -> None
         _setup_window() -> None
-        _process_disparity_and_depth(np.ndarray, np.ndarray,
-                                     Optional[np.ndarray] = None, Optional[Tuple[int, int]] = None
-                                     ) -> Tuple[np.ndarray, float, float, float, Optional[float]]
-        _draw_on_gray_image(np.ndarray, int,
-                            Tuple[int, int], float) -> np.ndarray
-        _draw_on_depth_image(np.ndarray, np.ndarray, Tuple[int, int]) -> np.ndarray
-        _display_image(np.ndarray, np.ndarray,
-                       np.ndarray, np.ndarray) -> None
-        _process_and_draw_images(np.ndarray, np.ndarray,
-                                 np.ndarray, np.ndarray, np.ndarray,
-                                 Optional[np.ndarray] = None, Optional[np.ndarray] = None) -> None
-        _save_images(np.ndarray, np.ndarray, np.ndarray) -> None
+        _update_window_title() -> None
     """
     def __init__(self, system_prefix: str, focal_length: float, baseline: float) -> None:
         """
@@ -55,26 +58,25 @@ class OpencvUIController():
 
         self._setup_logging()
 
-        self.mouse_x = 0
-        self.mouse_y = 0
+        self.mouse_coords = {'x': 0, 'y': 0}
         self._setup_window()
 
         self.camera_system = None
         self.aruco_detector = ArUcoDetector()
 
-        self.focal_length = focal_length
-        self.baseline = baseline
+        self.camera_params = {'focal_length': focal_length, 'baseline': baseline}
 
-        self.draw_horizontal_lines = False
-        self.draw_vertical_lines = False
+        self.draw_options = {
+            'horizontal_lines': False,
+            'vertical_lines': False,
+            'epipolar_lines': False
+        }
 
         self.epipolar_detector = EpipolarLineDetector()
-        self.draw_epipolar_lines = False
 
         self.calibration_mode = False
         self.chessboard_calibrator = ChessboardCalibrator()
-        self.left_image_points = []
-        self.right_image_points = []
+        self.image_points = {'left': [], 'right': []}
 
     def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
         """
@@ -129,10 +131,10 @@ class OpencvUIController():
         Returns:
             None.
         """
-        if self.left_image_points and self.right_image_points:
+        if self.image_points['left'] and self.image_points['right']:
             image_size = (self.camera_system.get_width(), self.camera_system.get_height())
-            success = self.chessboard_calibrator.calibrate_stereo_camera(self.left_image_points,
-                                                                         self.right_image_points,
+            success = self.chessboard_calibrator.calibrate_stereo_camera(self.image_points['left'],
+                                                                         self.image_points['right'],
                                                                          image_size)
             if success:
                 logging.info("Stereo camera calibration successful.")
@@ -260,13 +262,13 @@ class OpencvUIController():
             else:
                 self._save_images(left_gray_image, right_gray_image, first_depth_image, second_depth_image)
         if key == ord('h') or key == ord('H'):  # Toggle horizontal lines
-            self.draw_horizontal_lines = not self.draw_horizontal_lines
+            self.draw_options['horizontal_lines'] = not self.draw_options['horizontal_lines']
         if key == ord('v') or key == ord('V'):  # Toggle vertical lines
-            self.draw_vertical_lines = not self.draw_vertical_lines
+            self.draw_options['vertical_lines'] = not self.draw_options['vertical_lines']
         if key == ord('e') or key == ord('E'):  # Toggle epipolar lines
-            self.draw_epipolar_lines = not self.draw_epipolar_lines
+            self.draw_options['epipolar_lines'] = not self.draw_options['epipolar_lines']
             self._update_window_title()
-        if self.draw_epipolar_lines:
+        if self.draw_options['epipolar_lines']:
             if key == ord('n'):  # Switch to next detector
                 self.epipolar_detector.switch_detector('n')
                 self._update_window_title()
@@ -331,11 +333,11 @@ class OpencvUIController():
                 else:
                     cv2.line(image, (i, 0), (i, image.shape[0]), (0, 0, 255), 1)
 
-        if self.draw_horizontal_lines:
+        if self.draw_options['horizontal_lines']:
             draw_lines(left_colored, 20, 'horizontal')
             draw_lines(right_colored, 20, 'horizontal')
 
-        if self.draw_vertical_lines:
+        if self.draw_options['vertical_lines']:
             draw_lines(left_colored, 20, 'vertical')
             draw_lines(right_colored, 20, 'vertical')
 
@@ -359,7 +361,7 @@ class OpencvUIController():
                          marker_id, depth_mm_calc, depth_mm_from_image,
                          mean_disparity, variance_disparity, disparities.tolist())
 
-        if self.draw_epipolar_lines:
+        if self.draw_options['epipolar_lines']:
             if len(matching_ids_result) > 0 and self.epipolar_detector.fundamental_matrix is not None:
                 left_colored, right_colored = self.epipolar_detector.compute_epilines_from_corners(
                     left_colored, right_colored, matching_corners_left, matching_corners_right)
@@ -367,11 +369,11 @@ class OpencvUIController():
                 left_colored, right_colored = self.epipolar_detector.compute_epilines_from_scene(
                     left_colored, right_colored)
 
-        if 0 <= self.mouse_y < 480:
-            if 0 <= self.mouse_x < 640:
-                depth_coord = (self.mouse_x, self.mouse_y)
-            elif 640 <= self.mouse_x < 1280:
-                depth_coord = (self.mouse_x - 640, self.mouse_y)
+        if 0 <= self.mouse_coords['y'] < 480:
+            if 0 <= self.mouse_coords['x'] < 640:
+                depth_coord = (self.mouse_coords['x'], self.mouse_coords['y'])
+            elif 640 <= self.mouse_coords['x'] < 1280:
+                depth_coord = (self.mouse_coords['x'] - 640, self.mouse_coords['y'])
             else:
                 depth_coord = (0, 0)
 
@@ -413,7 +415,8 @@ class OpencvUIController():
         mean_disparity = np.mean(disparities)
         variance_disparity = np.var(disparities)
 
-        depth_mm_calc = (self.focal_length * self.baseline) / mean_disparity if mean_disparity > 0 else 0
+        depth_mm_calc = (self.camera_params['focal_length'] * self.camera_params['baseline']) / \
+            mean_disparity if mean_disparity > 0 else 0
 
         depth_mm_from_image = None
         if depth_image is not None and center_coords is not None:
@@ -438,14 +441,14 @@ class OpencvUIController():
         ret_right, corners_right = self.chessboard_calibrator.detect_chessboard_corners(right_gray_image)
 
         if ret_left and ret_right:
-            self.left_image_points.append(corners_left)
-            self.right_image_points.append(corners_right)
+            self.image_points['left'].append(corners_left)
+            self.image_points['right'].append(corners_right)
 
-            left_chessboard_dir = os.path.join(self.base_dir, "left_chessbaord_images")
-            right_chessbaord_dir = os.path.join(self.base_dir, "right_chessbaord_images")
+            left_chessboard_dir = os.path.join(self.base_dir, "left_chessboard_images")
+            right_chessboard_dir = os.path.join(self.base_dir, "right_chessboard_images")
 
             left_chessboard_path = os.path.join(left_chessboard_dir, f"left_chessboard{self.image_index}.png")
-            right_chessboard_path = os.path.join(right_chessbaord_dir, f"right_chessboard{self.image_index}.png")
+            right_chessboard_path = os.path.join(right_chessboard_dir, f"right_chessboard{self.image_index}.png")
 
             cv2.imwrite(left_chessboard_path, left_gray_image)
             cv2.imwrite(right_chessboard_path, right_gray_image)
@@ -569,7 +572,7 @@ class OpencvUIController():
         def _mouse_callback(event, x, y, _flags, _param):
             """Update the mouse position."""
             if event == cv2.EVENT_MOUSEMOVE:
-                self.mouse_x, self.mouse_y = x, y
+                self.mouse_coords['x'], self.mouse_coords['y'] = x, y
 
         # Create a window and set the mouse callback
         cv2.namedWindow("Combined View (2x2)")
@@ -579,7 +582,7 @@ class OpencvUIController():
         """
         Update the window title with the current detector name if epipolar lines are shown.
         """
-        if self.draw_epipolar_lines:
+        if self.draw_options['epipolar_lines']:
             detector_name = self.epipolar_detector.detectors[self.epipolar_detector.detector_index][0]
             cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Detector: {detector_name}")
         else:
