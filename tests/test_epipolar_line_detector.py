@@ -11,6 +11,7 @@ TestEpipolarLineDetector:
 
 """
 import logging
+
 import unittest
 import coverage
 

@@ -3,10 +3,12 @@ Unit tests for the ArUcoDetector class.
 """
 
 import unittest
+import coverage
+
 import numpy as np
 import cv2
+
 from src.opencv_objects import ArUcoDetector
-import coverage
 
 class TestArUcoDetector(unittest.TestCase):
     """

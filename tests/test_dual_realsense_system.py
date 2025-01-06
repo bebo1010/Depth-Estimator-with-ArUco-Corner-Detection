@@ -2,9 +2,10 @@
 Unit tests for the DualRealsenseSystem class.
 """
 import logging
+
+from unittest.mock import MagicMock, patch
 import unittest
 import coverage
-from unittest.mock import MagicMock, patch
 
 import numpy as np
 

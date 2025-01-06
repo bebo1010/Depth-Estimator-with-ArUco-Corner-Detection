@@ -4,9 +4,10 @@ Unit tests for the file_utils module.
 
 import os
 import logging
+
+from unittest.mock import patch, mock_open, call
 import unittest
 import coverage
-from unittest.mock import patch, mock_open, call
 
 import yaml
 import numpy as np
