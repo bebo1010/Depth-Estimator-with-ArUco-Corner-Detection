@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
     UI = OpencvUIController(system_prefix="GH3", focal_length=FOCAL_LENGTH, baseline=BASELINE)
 
-    CONFIG = "./camera_config/GH3_camera_config.yaml"
+    CONFIG = "./src/camera_config/GH3_camera_config.yaml"
     SN1 = "21091478"
     SN2 = "21091470"
 

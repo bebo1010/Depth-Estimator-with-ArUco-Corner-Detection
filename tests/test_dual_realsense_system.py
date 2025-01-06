@@ -2,13 +2,14 @@
 Unit tests for the DualRealsenseSystem class.
 """
 import logging
-import unittest
+
 from unittest.mock import MagicMock, patch
+import unittest
+import coverage
 
 import numpy as np
 
-from src.camera_objects import DualRealsenseSystem
-from src.camera_objects import RealsenseCameraSystem
+from src.camera_objects import RealsenseCameraSystem, DualRealsenseSystem
 
 class TestDualRealsenseSystem(unittest.TestCase):
     """
@@ -117,4 +118,13 @@ class TestDualRealsenseSystem(unittest.TestCase):
         self.mock_camera2.release.assert_called_once()
 
 if __name__ == '__main__':
+    cov = coverage.Coverage()
+    cov.start()
+
     unittest.main()
+
+    cov.stop()
+    cov.save()
+
+    cov.html_report()
+    print("Done.")

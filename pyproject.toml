@@ -2,6 +2,10 @@
 addopts = ["--import-mode=importlib"]
 pythonpath = "./src"
 [tool.coverage.run]
+omit = [
+    "config.py",
+    "config-3.py",
+    ]
 branch = true
 
 [tool.coverage.report]
@@ -52,5 +56,5 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "pylint==3.2.7",
-    "pytest==7.4.4"
+    "coverage==7.6.1"
 ]

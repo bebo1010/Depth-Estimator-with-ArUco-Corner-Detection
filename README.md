@@ -42,18 +42,21 @@
 - [x] Read two Realsense IR camera streams and Realsense depth stream
 - [x] Detect ArUco markers for each stream
     - [x] Compute depths with detected ArUco markers and get depth from Realsense depth stream
-- [x] Display horizontal lines, vertical lines, and epipolar lines
-    - [x] Show epipolar lines from marker corners if ArUco markers are detected. If not, show epipolar lines from detected key points
-    - [x] Default algorithm for detecting key points is `ORB`, can be switched to `SIFT`
 - [x] Include interfaces for other cameras
     - [x] Interface for intel realsense cameras
     - [x] Interface for FLIR cameras
     - [x] Add support for multiple realsense cameras
+- [x] Display horizontal lines, vertical lines, and epipolar lines
+    - [x] Show epipolar lines from marker corners if ArUco markers are detected. If not, show epipolar lines from detected key points
+    - [x] Default algorithm for detecting key points is `ORB`, can be switched to `SIFT`
+- [ ] Chessboard calibration for stereo camera
+    - [ ] Show reprojection error per image
 - [x] Unit Tests
     - [x] ArUco detector
     - [x] Camera systems (not possible for FLIR cameras)
     - [x] Utility functions
-    - [ ] Epipolar line detector
+    - [x] Epipolar line detector
+    - [ ] Chessboard Calibration
 
 ### buttons for opencv_ui_controller.py
 
@@ -66,7 +69,14 @@
 
 ## Goal
 
-To be added
+Add functionality to chessboard calibration
+- press `c` or `C` to activate calibration mode
+    - Display detected chessboard immediately
+    - press `s` or `S` to add chessboard image to collection
+        - display image counter on window title
+        - save images in disk
+        - Optional: Add figure for reviewing reprojection error
+- press `c ` or `C` again to deactivate calibration mode
 
 ## File Structure
 
@@ -81,6 +91,7 @@ To be added
 | `src/camera_config/GH3_camera_config.yaml` | config file for FLIR grasshopper3 cameras |
 | `src/camera_config/ORYX_camera_config.yaml` | config file for FLIR ORYX cameras |
 | `src/opencv_objects/aruco_detector.py` | class for detecting ArUco markers |
+| `src/opencv_objects/chessboard_calibration.py` | class for calibrating stereo camera with chessboard |
 | `src/opencv_objects/epipolar_line_detector.py` | class for detecting epipolar lines |
 | `src/ui_objects/opencv_ui_controller.py` | main controller for UI |
 | `src/utils/file_utils.py` | utility functions for file operations |
@@ -88,6 +99,7 @@ To be added
 | `src/main_flir.py` | main function for starting application with FLIR cameras |
 | `src/main_realsense.py` | main function for starting application with realsense camera |
 | `tests/test_aruco_detector.py` | unit test for aruco detector |
+| `tests/test_chessboard_calibration.py` | unit test for chessboard calibration |
 | `tests/test_dual_realsense_system.py` | unit test for dual realsense camera system |
 | `tests/test_realsense_camera_system.py` | unit test for realsense camera system |
 | `tests/test_file_utils.py` | unit test for file utilities |
@@ -121,6 +133,7 @@ To be added
 │   ├── opencv_objects/
 │   │   ├── __init__.py
 │   │   ├── aruco_detector.py
+│   │   ├── chessboard_calibration.py
 │   │   └── epipolar_line_detector.py
 │   ├── ui_objects/
 │   │   ├── __init__.py
@@ -148,6 +161,7 @@ To be added
 │       └── aruco_depth_log.txt
 ├── tests/
 │   ├── test_aruco_detector.py
+│   ├── test_chessboard_calibration.py
 │   ├── test_dual_realsense_system.py
 │   ├── test_epipolar_line_detector.py
 │   ├── test_file_utils.py
