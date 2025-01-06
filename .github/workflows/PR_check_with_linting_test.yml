@@ -61,11 +61,12 @@ jobs:
         id: pylint
         run: |
           . .venv/bin/activate
-          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=30 --max-attribute=15 | tee pylint-report.txt
+          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=30 --max-attribute=15
 
       - name: Post PyLint results as PR comment
         if: failure()
         run: |
+          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=30 --max-attribute=15 | tee pylint-report.txt
           gh pr comment "$PR_URL" -b "PyLint found issues:\n\`\`\`\n$(cat pylint-report.txt)\n\`\`\`"
           exit 1
         env:
@@ -98,11 +99,12 @@ jobs:
         id: unittest
         run: |
           . .venv/bin/activate
-          python -m unittest discover -s ./tests | tee unittest-report.txt
+          python -m unittest discover -s ./tests
 
       - name: Post Unit Test results as PR comment
         if: failure()
         run: |
+          python -m unittest discover -s ./tests | tee unittest-report.txt
           gh pr comment "$PR_URL" -b "Unit tests failed:\n\`\`\`\n$(cat unittest-report.txt)\n\`\`\`"
           exit 1
         env:
