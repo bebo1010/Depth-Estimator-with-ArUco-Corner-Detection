@@ -145,11 +145,17 @@ class ChessboardCalibrator():
                 - bool: Whether corners were detected.
                 - np.ndarray: Detected corners in image.
         """
+        logging.info("Detecting chessboard corners in image.")
         ret, corners = cv2.findChessboardCorners(image, self.pattern_size)
+
         if ret:
+            logging.info("Chessboard corners detected, running subpixel refinement.")
             criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
             corners = cv2.cornerSubPix(image, corners, (5, 5), (-1, -1), criteria)
+            logging.info("Chessboard corners refined.")
             return ret, corners
+
+        logging.warning("Chessboard corners not detected.")
         return ret, None
 
     def display_chessboard_corners(self, image: np.ndarray, corners: np.ndarray) -> np.ndarray:
@@ -163,6 +169,7 @@ class ChessboardCalibrator():
         Returns:
             np.ndarray: Image with corners drawn.
         """
+        logging.info("Drawing chessboard corners on image.")
         return cv2.drawChessboardCorners(image, self.pattern_size, corners, True)
 
     def calibrate_single_camera(self,
@@ -183,8 +190,10 @@ class ChessboardCalibrator():
         """
         assert len(image_points) > 0, "No image points detected."
         obj_points = self._generate_object_points(len(image_points))
+        logging.info("Calibrating camera with %d images for camera %d", len(image_points), camera_index)
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(obj_points, image_points, image_size,
                                                            cameraMatrix=None, distCoeffs=None)
+        logging.info("Camera calibration for camera %d complete with mean reprojection error: %f.", camera_index,  ret)
 
         # arbitrary threshold for successful calibration
         if ret > 3.0:
@@ -238,6 +247,8 @@ class ChessboardCalibrator():
             logging.error("Stereo camera calibration failed.")
             return False
 
+        logging.info("Single camera calibration successful for both cameras.")
+
         mtx_left = self._left_calibration_parameters["camera_matrix"]
         dist_left = self._left_calibration_parameters["distortion_coefficients"]
         mtx_right = self._right_calibration_parameters["camera_matrix"]
@@ -250,18 +261,21 @@ class ChessboardCalibrator():
             mtx_left, dist_left, mtx_right, dist_right,
             image_size, flags=None, criteria=None
             )
+        logging.info("Stereo camera calibration complete with mean reprojection error: %f.", ret)
 
         # arbitrary threshold for successful calibration
         if ret > 3.0:
             logging.error("Stereo camera calibration failed.")
             return False
 
+        logging.info("Rectifying stereo camera setup.")
         left_rectified_rotation, right_rectified_rotation, \
               left_projection, right_projection, \
                 reprojection, \
                     left_roi, right_roi = \
                         cv2.stereoRectify(new_mtx_left, new_dist_left, new_mtx_right, new_dist_right, \
                                           image_size, rotation, translation)
+        logging.info("Stereo camera rectification complete.")
 
         self._stereo_calibration_parameters = {
             "image_points_left": left_image_points,
@@ -297,6 +311,7 @@ class ChessboardCalibrator():
         Returns:
             Tuple[np.ndarray, np.ndarray]: Rectified images from the left and right cameras.
         """
+        logging.info("Rectifying stereo images.")
         left_map1, left_map2 = cv2.initUndistortRectifyMap(
             self._stereo_calibration_parameters["camera_matrix_left"],
             self._stereo_calibration_parameters["distortion_coefficients_left"],
@@ -318,6 +333,7 @@ class ChessboardCalibrator():
         left_rectified = cv2.remap(left_image, left_map1, left_map2, cv2.INTER_LINEAR)
         right_rectified = cv2.remap(right_image, right_map1, right_map2, cv2.INTER_LINEAR)
 
+        logging.info("Stereo images rectified.")
         return left_rectified, right_rectified
 
     def save_parameters(self, db_path: str = "./") -> None:
