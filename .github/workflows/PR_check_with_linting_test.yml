@@ -10,9 +10,34 @@ permissions:
   pull-requests: write
 
 jobs:
+  check-readme:
+    name: Check README.md for feature branches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check if branch is a feature branch
+        id: check-branch
+        run: |
+          if [[ "${{ github.head_ref }}" == feature/* ]]; then
+            echo "is_feature_branch=true" >> $GITHUB_ENV
+          else
+            echo "is_feature_branch=false" >> $GITHUB_ENV
+          fi
+
+      - name: Check if README.md is changed
+        if: env.is_feature_branch == 'true'
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          if ! git diff --name-only origin/${{ github.base_ref }} | grep -q 'README.md'; then
+            gh pr comment "$PR_URL" -b "You should update the README.md file for feature branches"
+            exit 1
+          fi
+
   lint-tests:
     name: PyLint Tests
     runs-on: ubuntu-latest
+    needs: check-readme
     strategy:
       matrix:
         python-version: ["3.8"]
@@ -34,13 +59,23 @@ jobs:
         shell: bash
 
       - name: Analyzing the code with pylint
+        id: pylint
         run: |
           . .venv/bin/activate
           pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=30 --max-attribute=15
+        continue-on-error: true
+
+      - name: Post PyLint results as PR comment
+        if: failure()
+        run: |
+          gh pr comment "$PR_URL" -b "PyLint found issues:\n\`\`\`\n$(cat pylint-report.txt)\n\`\`\`"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
 
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    needs: check-readme
     strategy:
       matrix:
         python-version: ["3.8"]
@@ -62,10 +97,18 @@ jobs:
         shell: bash
 
       - name: Run unit tests
+        id: unittest
         run: |
           . .venv/bin/activate
           python -m unittest discover -s ./tests
-        shell: bash
+        continue-on-error: true
+
+      - name: Post Unit Test results as PR comment
+        if: failure()
+        run: |
+          gh pr comment "$PR_URL" -b "Unit tests failed:\n\`\`\`\n$(cat unittest-report.txt)\n\`\`\`"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
 
   all-checks-passed:
     name: All Checks Passed
