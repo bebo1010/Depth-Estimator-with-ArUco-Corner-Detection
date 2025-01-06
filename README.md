@@ -50,13 +50,15 @@
     - [x] Show epipolar lines from marker corners if ArUco markers are detected. If not, show epipolar lines from detected key points
     - [x] Default algorithm for detecting key points is `ORB`, can be switched to `SIFT`
 - [ ] Chessboard calibration for stereo camera
-    - [ ] Show reprojection error per image
+    - [x] Calibration and save image
+    - [ ] Load back the parameters and rectify the images
+    - [ ] (Optional) Show reprojection error per image
 - [x] Unit Tests
     - [x] ArUco detector
     - [x] Camera systems (not possible for FLIR cameras)
     - [x] Utility functions
     - [x] Epipolar line detector
-    - [ ] Chessboard Calibration
+    - [x] Chessboard Calibration
 
 ### buttons for opencv_ui_controller.py
 
@@ -65,18 +67,15 @@
 - `e` or `E` to show epipolar lines
     - `n`, `N`, `p`, or `P` to change algorithm
 - `s` or `S` to save the images
+- `c` or `C` to toggle on calibration mode
+    - `s` or `S` to save chessboard image
+    - `c` or `C` to toggle off calibration mode and start calibration
 - `esc` to close program
 
 ## Goal
 
-Add functionality to chessboard calibration
-- press `c` or `C` to activate calibration mode
-    - Display detected chessboard immediately
-    - press `s` or `S` to add chessboard image to collection
-        - display image counter on window title
-        - save images in disk
-        - Optional: Add figure for reviewing reprojection error
-- press `c ` or `C` again to deactivate calibration mode
+Allow loading back calibration parameters.
+Add rectifying image and show epipolar lines again.
 
 ## File Structure
 
