@@ -343,9 +343,9 @@ class ChessboardCalibrator():
         Args:
             db_path (str): Directory path to save the JSON files.
         """
-        left_parameter_save_path = db_path + "left_camera_parameters.json"
-        right_parameter_save_path = db_path + "right_camera_parameters.json"
-        stereo_parameter_save_path = db_path + "stereo_camera_parameters.json"
+        left_parameter_save_path = db_path + "/left_camera_parameters.json"
+        right_parameter_save_path = db_path + "/right_camera_parameters.json"
+        stereo_parameter_save_path = db_path + "/stereo_camera_parameters.json"
 
         def serialize_numpy(obj: Any) -> Any:
             if isinstance(obj, np.ndarray):

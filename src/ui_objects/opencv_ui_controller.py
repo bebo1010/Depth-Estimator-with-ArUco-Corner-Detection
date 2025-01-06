@@ -36,7 +36,7 @@ class OpencvUIController():
         _save_chessboard_images(np.ndarray, np.ndarray) -> None
         _save_images(np.ndarray, np.ndarray, Optional[np.ndarray] = None, Optional[np.ndarray] = None) -> None
         _setup_window() -> None
-        _update_window_title() -> None
+        _update_window_title(bool) -> None
     """
     def __init__(self, system_prefix: str, focal_length: float, baseline: float) -> None:
         """
@@ -54,7 +54,7 @@ class OpencvUIController():
 
         setup_directories(self.base_dir)
         self.image_index = get_starting_index(left_ir_dir)
-        self.chessboard_image_index = get_starting_index(left_chessboard_dir)
+        self.chessboard_image_index = get_starting_index(left_chessboard_dir) - 1
 
         setup_logging(self.base_dir)
 
@@ -76,6 +76,9 @@ class OpencvUIController():
 
         self.calibration_mode = False
         self.chessboard_calibrator = ChessboardCalibrator()
+        # small chessboard pattern size
+        self.chessboard_calibrator.pattern_size = (10, 7)
+        self.chessboard_calibrator.square_size_mm = 10
         self.image_points = {'left': [], 'right': []}
 
     def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
@@ -111,8 +114,10 @@ class OpencvUIController():
                 continue
 
             if self.calibration_mode:
+                self._update_window_title(calibration_mode=True)
                 self._process_and_draw_chessboard(left_gray_image, right_gray_image)
             else:
+                self._update_window_title()
                 matching_ids_result, matching_corners_left, matching_corners_right = \
                     self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
                 self._process_and_draw_images(left_gray_image, right_gray_image,
@@ -139,8 +144,7 @@ class OpencvUIController():
             if success:
                 logging.info("Stereo camera calibration successful.")
                 self.chessboard_calibrator.save_parameters(self.base_dir)
-            else:
-                logging.error("Stereo camera calibration failed.")
+
         else:
             logging.warning("No chessboard images saved for calibration.")
 
@@ -259,7 +263,7 @@ class OpencvUIController():
         if key == ord('s') or key == ord('S'):  # Save images
             if self.calibration_mode:
                 self._save_chessboard_images(left_gray_image, right_gray_image)
-                self.chessboard_image_index += 1
+                self._update_window_title(calibration_mode=True)
             else:
                 save_images(self.base_dir, left_gray_image, right_gray_image,
                             self.image_index, first_depth_image, second_depth_image,
@@ -296,13 +300,31 @@ class OpencvUIController():
         Returns:
             None.
         """
-        ret_left, corners_left = self.chessboard_calibrator.detect_chessboard_corners(left_gray_image)
-        ret_right, corners_right = self.chessboard_calibrator.detect_chessboard_corners(right_gray_image)
+        # Define the scale factor
+        scale_factor = 2
+
+        # Downsample the images by the scale factor
+        left_small = cv2.resize(left_gray_image,
+                                (left_gray_image.shape[1] // scale_factor, left_gray_image.shape[0] // scale_factor))
+        right_small = cv2.resize(right_gray_image,
+                                 (right_gray_image.shape[1] // scale_factor, right_gray_image.shape[0] // scale_factor))
+
+        # Detect chessboard corners on the downsampled images
+        ret_left, corners_left_small = self.chessboard_calibrator.detect_chessboard_corners(left_small)
+        ret_right, corners_right_small = self.chessboard_calibrator.detect_chessboard_corners(right_small)
+
+        left_colored = cv2.cvtColor(left_gray_image, cv2.COLOR_GRAY2BGR)
+        right_colored = cv2.cvtColor(right_gray_image, cv2.COLOR_GRAY2BGR)
 
         if ret_left and ret_right:
-            left_colored = self.chessboard_calibrator.display_chessboard_corners(left_gray_image, corners_left)
-            right_colored = self.chessboard_calibrator.display_chessboard_corners(right_gray_image, corners_right)
-            self._display_image(left_colored, right_colored, np.zeros_like(left_colored), np.zeros_like(right_colored))
+            # Rescale the corners back to the original image size
+            corners_left = corners_left_small * scale_factor
+            corners_right = corners_right_small * scale_factor
+
+            left_colored = self.chessboard_calibrator.display_chessboard_corners(left_colored, corners_left)
+            right_colored = self.chessboard_calibrator.display_chessboard_corners(right_colored, corners_right)
+
+        self._display_image(left_colored, right_colored, np.zeros_like(left_colored), np.zeros_like(right_colored))
 
     def _process_and_draw_images(self,
                                  left_gray_image: np.ndarray,
@@ -448,6 +470,7 @@ class OpencvUIController():
             self.image_points['left'].append(corners_left)
             self.image_points['right'].append(corners_right)
 
+            self.chessboard_image_index += 1
             save_images(self.base_dir, left_gray_image, right_gray_image,
                         self.chessboard_image_index, prefix="chessboard")
 
@@ -470,11 +493,14 @@ class OpencvUIController():
         cv2.namedWindow("Combined View (2x2)")
         cv2.setMouseCallback("Combined View (2x2)", _mouse_callback)
 
-    def _update_window_title(self) -> None:
+    def _update_window_title(self, calibration_mode: bool = False) -> None:
         """
         Update the window title with the current detector name if epipolar lines are shown.
         """
-        if self.draw_options['epipolar_lines']:
+        if calibration_mode:
+            cv2.setWindowTitle("Combined View (2x2)",
+                               f"Combined View (2x2) - Calibration Mode - Images Saved: {self.chessboard_image_index}")
+        elif self.draw_options['epipolar_lines']:
             detector_name = self.epipolar_detector.detectors[self.epipolar_detector.detector_index][0]
             cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Detector: {detector_name}")
         else:
