@@ -71,7 +71,7 @@ jobs:
         run: |
           . .venv/bin/activate
           pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=30 --max-attribute=15 | tee pylint-report.txt
-          gh pr comment "$PR_URL" -b "PyLint found issues:\n\`\`\`\n$(cat pylint-report.txt)\n\`\`\`"
+          gh pr comment "$PR_URL" -b "$(cat pylint-report.txt)"
           exit 1
 
   unit-tests:
@@ -111,7 +111,7 @@ jobs:
         run: |
           . .venv/bin/activate
           python -m unittest discover -s ./tests | tee unittest-report.txt
-          gh pr comment "$PR_URL" -b "Unit tests failed:\n\`\`\`\n$(cat unittest-report.txt)\n\`\`\`"
+          gh pr comment "$PR_URL" -b "$(cat unittest-report.txt)"
           exit 1
 
   all-checks-passed:
