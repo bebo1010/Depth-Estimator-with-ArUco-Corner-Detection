@@ -99,27 +99,35 @@ class EpipolarLineDetector:
             raise ValueError("Feature detector is not set. Use set_feature_detector method to set it.")
 
         logging.info("Detecting features in the left and right images.")
-        keypoints_left, _ = self.detector.detectAndCompute(left_image, None)
-        keypoints_right, _ = self.detector.detectAndCompute(right_image, None)
+        keypoints_left, descriptors_left = self.detector.detectAndCompute(left_image, None)
+        keypoints_right, descriptors_right = self.detector.detectAndCompute(right_image, None)
 
         points_left = cv2.KeyPoint.convert(keypoints_left)
         points_right = cv2.KeyPoint.convert(keypoints_right)
 
-        if self.fundamental_matrix is None:
-            logging.info("Computing fundamental matrix.")
-            # Match features between the left and right images
-            bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
-            matches = bf.match(points_left, points_right)
-            matches = sorted(matches, key=lambda x: x.distance)
+        logging.info("Matching features between the left and right images.")
+        bf = cv2.BFMatcher(cv2.NORM_L2)
+        matches = bf.knnMatch(descriptors_left, descriptors_right, k=2)
 
-            # Extract the matched points
-            points_left = np.float32([points_left[m.queryIdx] for m in matches])
-            points_right = np.float32([points_right[m.trainIdx] for m in matches])
-            self.fundamental_matrix, _ = cv2.findFundamentalMat(points_left, points_right,
-                                                       method=cv2.FM_RANSAC,
-                                                       ransacReprojThreshold=3,
-                                                       confidence=0.99,
-                                                       maxIters=100)
+        # Apply Lowe's ratio test
+        good_matches = []
+        for m, n in matches:
+            if m.distance < 0.75 * n.distance:
+                good_matches.append(m)
+
+        # Extract the matched points
+        points_left = np.array([points_left[m.queryIdx] for m in good_matches], dtype=np.float32)
+        points_right = np.array([points_right[m.trainIdx] for m in good_matches], dtype=np.float32)
+
+        logging.info("Computing fundamental matrix.")
+        self.fundamental_matrix, mask = cv2.findFundamentalMat(points_left, points_right,
+                               method=cv2.FM_RANSAC,
+                               ransacReprojThreshold=3,
+                               confidence=0.99,
+                               maxIters=100)
+
+        points_left = points_left[mask.ravel() == 1]
+        points_right = points_right[mask.ravel() == 1]
 
         logging.info("Computing epilines.")
         epilines_left = cv2.computeCorrespondEpilines(points_right, 2, self.fundamental_matrix).reshape(-1, 3)
