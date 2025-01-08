@@ -18,11 +18,11 @@ class OpencvUIController():
     UI controller for ArUco detection application.
 
     Functions:
-        __init__(str, float, float) -> None
+        __init__(str, float, float, Tuple[int, int]) -> None
         set_camera_system(TwoCamerasSystem) -> None
         start() -> None
         _calibrate_cameras() -> None
-        _display_image(np.ndarray, np.ndarray, np.ndarray, np.ndarray) -> None
+        _display_image(np.ndarray, np.ndarray, np.ndarray, np.ndarray, str, str) -> None
         _draw_on_depth_image(np.ndarray, np.ndarray, Tuple[int, int]) -> np.ndarray
         _draw_on_gray_image(np.ndarray, int, Tuple[int, int], float) -> np.ndarray
         _get_starting_index(str) -> int
@@ -38,7 +38,11 @@ class OpencvUIController():
         _setup_window() -> None
         _update_window_title(bool) -> None
     """
-    def __init__(self, system_prefix: str, focal_length: float, baseline: float) -> None:
+    def __init__(self,
+                 system_prefix: str,
+                 focal_length: float,
+                 baseline: float,
+                 principal_point: Tuple[int, int]) -> None:
         """
         Initialize UI controller.
 
@@ -59,12 +63,14 @@ class OpencvUIController():
         setup_logging(self.base_dir)
 
         self.mouse_coords = {'x': 0, 'y': 0}
+        self.window_size = (1920, 1200)
+        self.matrix_view_size = (1200, 1200)
         self._setup_window()
 
         self.camera_system = None
         self.aruco_detector = ArUcoDetector()
 
-        self.camera_params = {'focal_length': focal_length, 'baseline': baseline}
+        self.camera_params = {'focal_length': focal_length, 'baseline': baseline, 'principal_point': principal_point}
 
         self.display_option = {
             'horizontal_lines': False,
@@ -157,7 +163,9 @@ class OpencvUIController():
                        left_colored: np.ndarray,
                        right_colored: np.ndarray,
                        first_depth_colormap: np.ndarray,
-                       second_depth_colormap: np.ndarray) -> None:
+                       second_depth_colormap: np.ndarray,
+                       aruco_info: str,
+                       mouse_info: str) -> None:
         """
         Display the processed images on the window.
 
@@ -166,64 +174,38 @@ class OpencvUIController():
             right_colored (np.ndarray): Colored image of the right camera.
             first_depth_colormap (np.ndarray): Color-mapped first depth image.
             second_depth_colormap (np.ndarray): Color-mapped second depth image.
+            aruco_info (str): Information about detected ArUco markers.
+            mouse_info (str): Information about mouse hover.
 
         Returns:
             None.
         """
+        image_width, image_height = self.matrix_view_size
+
         top_row = np.hstack((left_colored, right_colored))
         bottom_row = np.hstack((first_depth_colormap, second_depth_colormap))
-        combined_view = np.vstack((cv2.resize(top_row, (1280, 480)), cv2.resize(bottom_row, (1280, 480))))
+        combined_view = np.vstack((cv2.resize(top_row, (image_width, image_height // 2)),
+                                   cv2.resize(bottom_row, (image_width, image_height // 2))))
 
-        cv2.imshow("Combined View (2x2)", combined_view)
+        # Create a blank image with the desired window size
+        window_image = np.zeros((self.window_size[1], self.window_size[0], 3), dtype=np.uint8)
+        window_image[:image_height, :image_width] = combined_view
 
-    def _draw_on_depth_image(self,
-                              depth_image: np.ndarray,
-                              depth_colormap: np.ndarray,
-                              mouse_coords: Tuple[int, int]) -> np.ndarray:
-        """
-        Draw depth data on the depth image.
+        # Add ArUco and mouse information to the right side of the window
+        x0 = 20
+        y0, dy = 30, 30
+        cv2.putText(window_image, "Units: mm", (image_width + x0, y0),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+        for i, line in enumerate(aruco_info.split('\n')):
+            y = y0 + (i + 1) * dy
+            cv2.putText(window_image, line, (image_width + x0, y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+        for i, line in enumerate(mouse_info.split('\n')):
+            y = y0 + (i + len(aruco_info.split('\n')) + 1) * dy
+            cv2.putText(window_image, line, (image_width + x0, y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
 
-        Args:
-            depth_image (np.ndarray): Depth image.
-            depth_colormap (np.ndarray): Color-mapped depth image.
-            mouse_coords (Tuple[int, int]): Mouse coordinates.
-
-        Returns:
-            np.ndarray: Depth image with drawn depth data.
-        """
-        mouse_x, mouse_y = mouse_coords
-        scaled_x = int(mouse_x * (self.camera_system.get_width() / 640))
-        scaled_y = int(mouse_y * (self.camera_system.get_height() / 480))
-
-        depth_value = depth_image[scaled_y, scaled_x]
-
-        cv2.circle(depth_colormap, (scaled_x, scaled_y), 5, (0, 255, 255), -1)
-        text = f"Depth: {depth_value} mm"
-        cv2.putText(depth_colormap, text, (scaled_x + 10, scaled_y),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-
-        return depth_colormap
-
-    def _draw_on_gray_image(self,
-                            image: np.ndarray,
-                            marker_id: int,
-                            center_coords: Tuple[int, int],
-                            depth_mm_calc: float) -> np.ndarray:
-        """
-        Draw marker ID and calculated depth on the grayscale image.
-
-        Args:
-            image (np.ndarray): Grayscale image to draw on.
-            marker_id (int): Detected marker ID.
-            center_coords (Tuple[int, int]): Center coordinates of the marker.
-            depth_mm_calc (float): Calculated depth in mm.
-
-        Returns:
-            np.ndarray: Grayscale image with drawn markers and depth.
-        """
-        cv2.putText(image, f"ID:{marker_id} Depth:{int(depth_mm_calc)}mm",
-                    center_coords, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-        return image
+        cv2.imshow("Combined View (2x2)", window_image)
 
     def _get_starting_index(self, directory: str) -> int:
         """
@@ -365,7 +347,9 @@ class OpencvUIController():
             left_colored = self.chessboard_calibrator.display_chessboard_corners(left_colored, corners_left)
             right_colored = self.chessboard_calibrator.display_chessboard_corners(right_colored, corners_right)
 
-        self._display_image(left_colored, right_colored, np.zeros_like(left_colored), np.zeros_like(right_colored))
+        self._display_image(left_colored, right_colored,
+                            np.zeros_like(left_colored), np.zeros_like(right_colored),
+                            aruco_info="", mouse_info="")
 
     def _process_and_draw_images(self,
                                  left_gray_image: np.ndarray,
@@ -400,6 +384,43 @@ class OpencvUIController():
                 else:
                     cv2.line(image, (i, 0), (i, image.shape[0]), (0, 0, 255), 1)
 
+        def apply_colormap(depth_image):
+            return np.zeros_like(left_colored) if depth_image is None else \
+                cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+
+        def calculate_3d_coords(xs, ys, depths):
+            return [((x - self.camera_params['principal_point'][0]) * depth / self.camera_params['focal_length'],
+                     (y - self.camera_params['principal_point'][1]) * depth / self.camera_params['focal_length'], depth)
+                    for x, y, depth in zip(xs, ys, depths)]
+
+        def update_aruco_info(marker_id,
+                              estimated_3d_coords, realsense_3d_coords,
+                              mean_depth_estimated, mean_depth_realsense):
+            info = f"ArUco ID {marker_id}:\n"
+            info += f"Estimated: ({estimated_3d_coords[0][0]:7.1f}, {estimated_3d_coords[0][1]:7.1f}, " \
+                    f"{estimated_3d_coords[0][2]:7.1f}), ({estimated_3d_coords[1][0]:7.1f}, " \
+                    f"{estimated_3d_coords[1][1]:7.1f}, {estimated_3d_coords[1][2]:7.1f})\n"
+            info += f"           ({estimated_3d_coords[2][0]:7.1f}, {estimated_3d_coords[2][1]:7.1f}, " \
+                    f"{estimated_3d_coords[2][2]:7.1f}), ({estimated_3d_coords[3][0]:7.1f}, " \
+                    f"{estimated_3d_coords[3][1]:7.1f}, {estimated_3d_coords[3][2]:7.1f})\n"
+            info += f"Mean Depth (Estimated): {mean_depth_estimated:.2f}\n"
+            info += f"RealSense: ({realsense_3d_coords[0][0]:7.1f}, {realsense_3d_coords[0][1]:7.1f}, " \
+                    f"{realsense_3d_coords[0][2]:7.1f}), ({realsense_3d_coords[1][0]:7.1f}, " \
+                    f"{realsense_3d_coords[1][1]:7.1f}, {realsense_3d_coords[1][2]:7.1f})\n"
+            info += f"           ({realsense_3d_coords[2][0]:7.1f}, {realsense_3d_coords[2][1]:7.1f}, " \
+                    f"{realsense_3d_coords[2][2]:7.1f}), ({realsense_3d_coords[3][0]:7.1f}, " \
+                    f"{realsense_3d_coords[3][1]:7.1f}, {realsense_3d_coords[3][2]:7.1f})\n"
+            info += f"Mean Depth (RealSense): {mean_depth_realsense:.2f}\n\n"
+            return info
+
+        def get_mouse_coords():
+            if 0 <= self.mouse_coords['y'] < self.matrix_view_size[1] // 2:
+                if 0 <= self.mouse_coords['x'] < self.matrix_view_size[0] // 2:
+                    return (self.mouse_coords['x'], self.mouse_coords['y'])
+                if self.matrix_view_size[0] // 2 <= self.mouse_coords['x'] < self.matrix_view_size[0]:
+                    return (self.mouse_coords['x'] - self.matrix_view_size[0] // 2, self.mouse_coords['y'])
+            return (0, 0)
+
         if self.display_option['horizontal_lines']:
             draw_lines(left_colored, 20, 'horizontal')
             draw_lines(right_colored, 20, 'horizontal')
@@ -408,25 +429,31 @@ class OpencvUIController():
             draw_lines(left_colored, 20, 'vertical')
             draw_lines(right_colored, 20, 'vertical')
 
-        first_depth_colormap = np.zeros_like(left_colored) if first_depth_image is None else \
-            cv2.applyColorMap(cv2.convertScaleAbs(first_depth_image, alpha=0.03), cv2.COLORMAP_JET)
+        first_depth_colormap = apply_colormap(first_depth_image)
+        second_depth_colormap = apply_colormap(second_depth_image)
 
-        second_depth_colormap = np.zeros_like(left_colored) if second_depth_image is None else \
-            cv2.applyColorMap(cv2.convertScaleAbs(second_depth_image, alpha=0.03), cv2.COLORMAP_JET)
-
+        aruco_info = ""
         for i, marker_id in enumerate(matching_ids_result):
-            center_coords = tuple(np.mean(matching_corners_left[i], axis=0).astype(int))
-            disparities, mean_disparity, variance_disparity, depth_mm_calc, depth_mm_from_image = \
+            disparities, mean_disparity, variance_disparity, estimated_depth_mm, realsense_depth_mm = \
                 self._process_disparity_and_depth(matching_corners_left[i], matching_corners_right[i],
-                                                  first_depth_image, center_coords)
+                                                  first_depth_image)
 
-            left_colored = self._draw_on_gray_image(left_colored, marker_id, center_coords, depth_mm_calc)
-
-            depth_mm_from_image = str(depth_mm_from_image) if depth_mm_from_image is not None else "N/A"
             logging.info("Marker ID: %d, Calculated Depth: %.2f mm, Depth Image Depth: %s mm, "
                          "Mean Disparity: %.2f, Variance: %.2f, Disparities: %s",
-                         marker_id, depth_mm_calc, depth_mm_from_image,
+                         marker_id, np.mean(estimated_depth_mm), np.mean(realsense_depth_mm),
                          mean_disparity, variance_disparity, disparities.tolist())
+
+            # Calculate 3D coordinates
+            estimated_3d_coords = calculate_3d_coords(
+                matching_corners_left[i][:, 0], matching_corners_left[i][:, 1], estimated_depth_mm
+            )
+            realsense_3d_coords = calculate_3d_coords(
+                matching_corners_left[i][:, 0], matching_corners_left[i][:, 1], realsense_depth_mm
+            )
+
+            aruco_info += update_aruco_info(marker_id,
+                                            estimated_3d_coords, realsense_3d_coords,
+                                            np.mean(estimated_depth_mm), np.mean(realsense_depth_mm))
 
         if self.display_option['epipolar_lines']:
             if len(matching_ids_result) > 0 and self.epipolar_detector.fundamental_matrix is not None:
@@ -436,29 +463,31 @@ class OpencvUIController():
                 left_colored, right_colored = self.epipolar_detector.compute_epilines_from_scene(
                     left_colored, right_colored)
 
-        if 0 <= self.mouse_coords['y'] < 480:
-            if 0 <= self.mouse_coords['x'] < 640:
-                depth_coord = (self.mouse_coords['x'], self.mouse_coords['y'])
-            elif 640 <= self.mouse_coords['x'] < 1280:
-                depth_coord = (self.mouse_coords['x'] - 640, self.mouse_coords['y'])
-            else:
-                depth_coord = (0, 0)
+        # Calculate mouse hover info
+        mouse_x, mouse_y = get_mouse_coords()
+        if first_depth_image is not None:
+            scaled_x = int(mouse_x * (self.camera_system.get_width() / (self.matrix_view_size[0] // 2)))
+            scaled_y = int(mouse_y * (self.camera_system.get_height() / (self.matrix_view_size[1] // 2)))
 
-            if first_depth_image is not None:
-                first_depth_colormap = self._draw_on_depth_image(first_depth_image, first_depth_colormap, depth_coord)
+            depth_value = first_depth_image[scaled_y, scaled_x]
 
-            if second_depth_image is not None:
-                second_depth_colormap = self._draw_on_depth_image(second_depth_image,
-                                                                  second_depth_colormap, depth_coord)
+            mouse_x_3d = (scaled_x - self.camera_params['principal_point'][0]) \
+                            * depth_value / self.camera_params['focal_length']
+            mouse_y_3d = (scaled_y - self.camera_params['principal_point'][1]) \
+                            * depth_value / self.camera_params['focal_length']
+            mouse_info = f"Mouse: ({mouse_x_3d:7.1f}, {mouse_y_3d:7.1f}, {depth_value:7.1f})"
+        else:
+            mouse_info = "Mouse: (N/A, N/A, N/A)"
 
-        self._display_image(left_colored, right_colored, first_depth_colormap, second_depth_colormap)
+        self._display_image(left_colored, right_colored,
+                            first_depth_colormap, second_depth_colormap,
+                            aruco_info, mouse_info)
 
     def _process_disparity_and_depth(self,
                                      matching_corners_left: np.ndarray,
                                      matching_corners_right: np.ndarray,
-                                     depth_image: Optional[np.ndarray] = None,
-                                     center_coords: Optional[Tuple[int, int]] = None
-                                     ) -> Tuple[np.ndarray, float, float, float, Optional[float]]:
+                                     depth_image: Optional[np.ndarray] = None
+                                     ) -> Tuple[np.ndarray, float, float, np.ndarray, np.ndarray]:
         """
         Calculate disparities, mean, variance, and depth from matching corners.
 
@@ -468,30 +497,28 @@ class OpencvUIController():
             matching_corners_left (np.ndarray): Corner points of the left image.
             matching_corners_right (np.ndarray): Corner points of the right image.
             depth_image (Optional[np.ndarray]): Depth image for calculating depth from image (optional).
-            center_coords (Optional[Tuple[int, int]]): Center coordinates for depth image lookup (optional).
 
         Returns:
-            Tuple[np.ndarray, float, float, float, Optional[float]]:
+            Tuple[np.ndarray, float, float, np.ndarray, np.ndarray]:
                 - Disparities between matching corners.
                 - Mean of disparities.
                 - Variance of disparities.
-                - Calculated depth in mm.
-                - Depth in mm from depth image (if provided).
+                - Calculated depth per corner in mm.
+                - Depths at the 4 corner points from depth image (if provided).
         """
         disparities = np.abs(matching_corners_left[:, 0] - matching_corners_right[:, 0])
         mean_disparity = np.mean(disparities)
         variance_disparity = np.var(disparities)
 
-        depth_mm_calc = (self.camera_params['focal_length'] * self.camera_params['baseline']) / \
-            mean_disparity if mean_disparity > 0 else 0
+        estimated_depth_mm = (self.camera_params['focal_length'] * self.camera_params['baseline']) / disparities
 
-        depth_mm_from_image = None
-        if depth_image is not None and center_coords is not None:
-            x, y = center_coords
-            depth_mm_from_image = depth_image[min(max(int(y), 0), depth_image.shape[0] - 1),
-                                              min(max(int(x), 0), depth_image.shape[1] - 1)]
+        realsense_depth_mm = np.zeros_like(estimated_depth_mm)
+        if depth_image is not None:
+            for j, (cx, cy) in enumerate(matching_corners_left):
+                realsense_depth_mm[j] = depth_image[min(max(int(cy), 0), depth_image.shape[0] - 1),
+                                               min(max(int(cx), 0), depth_image.shape[1] - 1)]
 
-        return disparities, mean_disparity, variance_disparity, depth_mm_calc, depth_mm_from_image
+        return disparities, mean_disparity, variance_disparity, estimated_depth_mm, realsense_depth_mm
 
     def _save_chessboard_images(self, left_gray_image: np.ndarray, right_gray_image: np.ndarray) -> None:
         """
@@ -531,7 +558,8 @@ class OpencvUIController():
                 self.mouse_coords['x'], self.mouse_coords['y'] = x, y
 
         # Create a window and set the mouse callback
-        cv2.namedWindow("Combined View (2x2)")
+        cv2.namedWindow("Combined View (2x2)", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("Combined View (2x2)", *self.window_size)
         cv2.setMouseCallback("Combined View (2x2)", _mouse_callback)
 
     def _update_window_title(self) -> None:

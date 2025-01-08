@@ -54,6 +54,11 @@
     - [x] Calibration and save image
     - [ ] Load back the parameters and rectify the images
     - [ ] (Optional) Show reprojection error per image
+- [x] Information display to the right of matrix view
+    - [x] 3D position of 4 corner points of ArUco
+        - [x] Estimated 3D position
+        - [x] RealSense 3D position
+        - [x] Mouse hover 3D position
 - [x] Unit Tests
     - [x] ArUco detector
     - [x] Camera systems (not possible for FLIR cameras)
@@ -76,13 +81,6 @@
 
 ## Goal
 1. Currently
-    - Move all the depth information outside
-        - display for each ArUco markers
-            - Show 4 corner points
-                - first line being ground truth
-                - second line being estimation
-                - third line being RealSense
-            - preferably (X, Y, Z) format
     - Add button for marking ArUco on image
         - maybe use red color, but still depends on whether it can be seen or not
 
