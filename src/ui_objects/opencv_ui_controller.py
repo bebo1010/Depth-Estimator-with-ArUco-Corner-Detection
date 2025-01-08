@@ -49,7 +49,7 @@ class OpencvUIController():
         No return.
         """
         self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
-        left_ir_dir = os.path.join(self.base_dir, "left_images")
+        left_ir_dir = os.path.join(self.base_dir, "left_ArUco_images")
         left_chessboard_dir = os.path.join(self.base_dir, "left_chessboard_images")
 
         setup_directories(self.base_dir)
@@ -260,7 +260,7 @@ class OpencvUIController():
             self.camera_system.release()
             cv2.destroyAllWindows()
             return True
-        if key == ord('s') or key == ord('S'):  # Save images
+        if key in [ord('s'), ord('S')]: # Save images
             if self.calibration_mode:
                 self._save_chessboard_images(left_gray_image, right_gray_image)
                 self._update_window_title(calibration_mode=True)
@@ -269,21 +269,21 @@ class OpencvUIController():
                             self.image_index, first_depth_image, second_depth_image,
                             prefix="ArUco")
                 self.image_index += 1
-        if key == ord('h') or key == ord('H'):  # Toggle horizontal lines
+        if key in [ord('h'), ord('H')]:  # Toggle horizontal lines
             self.draw_options['horizontal_lines'] = not self.draw_options['horizontal_lines']
-        if key == ord('v') or key == ord('V'):  # Toggle vertical lines
+        if key in [ord('v'), ord('V')]:  # Toggle vertical lines
             self.draw_options['vertical_lines'] = not self.draw_options['vertical_lines']
-        if key == ord('e') or key == ord('E'):  # Toggle epipolar lines
+        if key in [ord('e'), ord('E')]:  # Toggle epipolar lines
             self.draw_options['epipolar_lines'] = not self.draw_options['epipolar_lines']
             self._update_window_title()
         if self.draw_options['epipolar_lines']:
-            if key == ord('n'):  # Switch to next detector
+            if key in [ord('n'), ord('N')]:  # Switch to next detector
                 self.epipolar_detector.switch_detector('n')
                 self._update_window_title()
-            if key == ord('p'):  # Switch to previous detector
+            if key in [ord('p'), ord('P')]:  # Switch to previous detector
                 self.epipolar_detector.switch_detector('p')
                 self._update_window_title()
-        if key == ord('c') or key == ord('C'):
+        if key in [ord('c'), ord('C')]:  # Toggle calibration modee
             self.calibration_mode = not self.calibration_mode
             if not self.calibration_mode:
                 self._calibrate_cameras()

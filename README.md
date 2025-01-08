@@ -67,7 +67,7 @@
 - `v` or `V` to show vertical lines
 - `e` or `E` to show epipolar lines
     - `n`, `N`, `p`, or `P` to change algorithm
-- `s` or `S` to save the images (**Broken**)
+- `s` or `S` to save the images
 - `c` or `C` to toggle on calibration mode
     - `s` or `S` to save chessboard image
     - `c` or `C` to toggle off calibration mode and start calibration
@@ -85,8 +85,6 @@
             - preferably (X, Y, Z) format
     - Add button for marking ArUco on image
         - maybe use red color, but still depends on whether it can be seen or not
-    - Fix broken save image functionality
-        - Depth images gets saved, but not the left and right images
 
 2. Next Step
     - Allow loading back calibration parameters.
