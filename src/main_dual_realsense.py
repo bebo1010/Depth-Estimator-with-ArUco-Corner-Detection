@@ -9,7 +9,7 @@ if __name__ == "__main__":
     from .camera_objects import RealsenseCameraSystem, DualRealsenseSystem
     # D415
     FOCAL_LENGTH = 908.36  # in pixels
-    BASELINE = 55  # in mm
+    BASELINE = 150  # in mm
     WIDTH = 1280
     HEIGHT = 720
 
