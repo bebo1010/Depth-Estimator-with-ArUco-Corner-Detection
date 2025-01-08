@@ -66,10 +66,12 @@ class OpencvUIController():
 
         self.camera_params = {'focal_length': focal_length, 'baseline': baseline}
 
-        self.draw_options = {
+        self.display_option = {
             'horizontal_lines': False,
             'vertical_lines': False,
-            'epipolar_lines': False
+            'epipolar_lines': False,
+            'calibration_mode': False,
+            'freeze_mode': False
         }
 
         self.epipolar_detector = EpipolarLineDetector()
@@ -105,19 +107,22 @@ class OpencvUIController():
         No return.
         """
         cv2.namedWindow("Combined View (2x2)")
-        self._update_window_title()
+
+        left_gray_image, right_gray_image = None, None
+        first_depth_image, second_depth_image = None, None
 
         while True:
-            success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
-            _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
-            if not success:
-                continue
+            self._update_window_title()
 
-            if self.calibration_mode:
-                self._update_window_title(calibration_mode=True)
+            if not self.display_option['freeze_mode']:
+                success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
+                _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
+                if not success:
+                    continue
+
+            if self.display_option['calibration_mode']:
                 self._process_and_draw_chessboard(left_gray_image, right_gray_image)
             else:
-                self._update_window_title()
                 matching_ids_result, matching_corners_left, matching_corners_right = \
                     self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
                 self._process_and_draw_images(left_gray_image, right_gray_image,
@@ -255,39 +260,75 @@ class OpencvUIController():
         Returns:
             bool: True if the application should exit, False otherwise.
         """
-        if key == 27:  # ESC key
-            logging.info("Program terminated by user.")
-            self.camera_system.release()
-            cv2.destroyAllWindows()
-            return True
-        if key in [ord('s'), ord('S')]: # Save images
-            if self.calibration_mode:
-                self._save_chessboard_images(left_gray_image, right_gray_image)
-                self._update_window_title(calibration_mode=True)
-            else:
-                save_images(self.base_dir, left_gray_image, right_gray_image,
-                            self.image_index, first_depth_image, second_depth_image,
-                            prefix="ArUco")
-                self.image_index += 1
-        if key in [ord('h'), ord('H')]:  # Toggle horizontal lines
-            self.draw_options['horizontal_lines'] = not self.draw_options['horizontal_lines']
-        if key in [ord('v'), ord('V')]:  # Toggle vertical lines
-            self.draw_options['vertical_lines'] = not self.draw_options['vertical_lines']
-        if key in [ord('e'), ord('E')]:  # Toggle epipolar lines
-            self.draw_options['epipolar_lines'] = not self.draw_options['epipolar_lines']
-            self._update_window_title()
-        if self.draw_options['epipolar_lines']:
-            if key in [ord('n'), ord('N')]:  # Switch to next detector
-                self.epipolar_detector.switch_detector('n')
-                self._update_window_title()
-            if key in [ord('p'), ord('P')]:  # Switch to previous detector
-                self.epipolar_detector.switch_detector('p')
-                self._update_window_title()
-        if key in [ord('c'), ord('C')]:  # Toggle calibration modee
-            self.calibration_mode = not self.calibration_mode
-            if not self.calibration_mode:
-                self._calibrate_cameras()
+        # Define actions for each key
+        actions = {
+            27: self._exit_program,  # ESC key
+            ord('s'): lambda: self._save_images(left_gray_image, right_gray_image,
+                                                first_depth_image, second_depth_image),
+            ord('S'): lambda: self._save_images(left_gray_image, right_gray_image,
+                                                first_depth_image, second_depth_image),
+            ord('h'): lambda: self._toggle_option('horizontal_lines'),
+            ord('H'): lambda: self._toggle_option('horizontal_lines'),
+            ord('v'): lambda: self._toggle_option('vertical_lines'),
+            ord('V'): lambda: self._toggle_option('vertical_lines'),
+            ord('e'): lambda: self._toggle_option('epipolar_lines'),
+            ord('E'): lambda: self._toggle_option('epipolar_lines'),
+            ord('n'): self._next_detector,
+            ord('N'): self._next_detector,
+            ord('p'): self._previous_detector,
+            ord('P'): self._previous_detector,
+            ord('c'): self._toggle_calibration_mode,
+            ord('C'): self._toggle_calibration_mode,
+            ord('f'): self._toggle_freeze_mode,
+            ord('F'): self._toggle_freeze_mode
+        }
+
+        # Execute the corresponding action if the key is in the dictionary
+        if key in actions:
+            actions[key]()
+            return key == 27  # Return True if the ESC key was pressed
+
         return False
+
+    def _exit_program(self):
+        logging.info("Program terminated by user.")
+        self.camera_system.release()
+        cv2.destroyAllWindows()
+
+    def _save_images(self, left_gray_image, right_gray_image, first_depth_image, second_depth_image):
+        if self.display_option['calibration_mode']:
+            self._save_chessboard_images(left_gray_image, right_gray_image)
+        else:
+            save_images(self.base_dir, left_gray_image, right_gray_image,
+                        self.image_index, first_depth_image, second_depth_image,
+                        prefix="ArUco")
+            self.image_index += 1
+
+    def _toggle_option(self, option):
+        self.display_option[option] = not self.display_option[option]
+        self._update_window_title()
+
+    def _next_detector(self):
+        if self.display_option['epipolar_lines']:
+            self.epipolar_detector.switch_detector('n')
+            self._update_window_title()
+
+    def _previous_detector(self):
+        if self.display_option['epipolar_lines']:
+            self.epipolar_detector.switch_detector('p')
+            self._update_window_title()
+
+    def _toggle_calibration_mode(self):
+        self.display_option['calibration_mode'] = not self.display_option['calibration_mode']
+        if self.display_option['calibration_mode']:
+            self.display_option['freeze_mode'] = False
+        if not self.display_option['calibration_mode']:
+            self._calibrate_cameras()
+
+    def _toggle_freeze_mode(self):
+        self.display_option['freeze_mode'] = not self.display_option['freeze_mode']
+        if self.display_option['freeze_mode']:
+            self.display_option['calibration_mode'] = False
 
     def _process_and_draw_chessboard(self, left_gray_image: np.ndarray, right_gray_image: np.ndarray) -> None:
         """
@@ -359,11 +400,11 @@ class OpencvUIController():
                 else:
                     cv2.line(image, (i, 0), (i, image.shape[0]), (0, 0, 255), 1)
 
-        if self.draw_options['horizontal_lines']:
+        if self.display_option['horizontal_lines']:
             draw_lines(left_colored, 20, 'horizontal')
             draw_lines(right_colored, 20, 'horizontal')
 
-        if self.draw_options['vertical_lines']:
+        if self.display_option['vertical_lines']:
             draw_lines(left_colored, 20, 'vertical')
             draw_lines(right_colored, 20, 'vertical')
 
@@ -387,7 +428,7 @@ class OpencvUIController():
                          marker_id, depth_mm_calc, depth_mm_from_image,
                          mean_disparity, variance_disparity, disparities.tolist())
 
-        if self.draw_options['epipolar_lines']:
+        if self.display_option['epipolar_lines']:
             if len(matching_ids_result) > 0 and self.epipolar_detector.fundamental_matrix is not None:
                 left_colored, right_colored = self.epipolar_detector.compute_epilines_from_corners(
                     left_colored, right_colored, matching_corners_left, matching_corners_right)
@@ -493,15 +534,17 @@ class OpencvUIController():
         cv2.namedWindow("Combined View (2x2)")
         cv2.setMouseCallback("Combined View (2x2)", _mouse_callback)
 
-    def _update_window_title(self, calibration_mode: bool = False) -> None:
+    def _update_window_title(self) -> None:
         """
         Update the window title with the current detector name if epipolar lines are shown.
         """
-        if calibration_mode:
+        if self.display_option['calibration_mode']:
             cv2.setWindowTitle("Combined View (2x2)",
                                f"Combined View (2x2) - Calibration Mode - Images Saved: {self.chessboard_image_index}")
-        elif self.draw_options['epipolar_lines']:
+        elif self.display_option['epipolar_lines']:
             detector_name = self.epipolar_detector.detectors[self.epipolar_detector.detector_index][0]
             cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Detector: {detector_name}")
         else:
             cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2)")
+        if self.display_option['freeze_mode']:
+            cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2) - Freeze Mode")

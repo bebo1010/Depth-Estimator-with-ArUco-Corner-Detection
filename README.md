@@ -68,6 +68,7 @@
 - `e` or `E` to show epipolar lines
     - `n`, `N`, `p`, or `P` to change algorithm
 - `s` or `S` to save the images
+- `f` or `F` to freeze frame
 - `c` or `C` to toggle on calibration mode
     - `s` or `S` to save chessboard image
     - `c` or `C` to toggle off calibration mode and start calibration
@@ -75,7 +76,6 @@
 
 ## Goal
 1. Currently
-    - Add functionality for freeze frame, possible button `f`
     - Move all the depth information outside
         - display for each ArUco markers
             - Show 4 corner points
