@@ -39,15 +39,16 @@
     ```
 
 ## Functionality
-- [x] Read two Realsense IR camera streams and Realsense depth stream
-- [x] Detect ArUco markers for each stream
-    - [x] Compute depths with detected ArUco markers and get depth from Realsense depth stream
+- [x] Detect ArUco markers from left and right image
+    - [x] Compute depths with detected ArUco markers
 - [x] Include interfaces for other cameras
-    - [x] Interface for intel realsense cameras
+    - [x] Interface for intel RealSense cameras
+        - [x] Single RealSense camera
+        - [x] Dual RealSense camera
     - [x] Interface for FLIR cameras
-    - [x] Add support for multiple realsense cameras
+    - [x] Add support for multiple RealSense cameras
 - [x] Display horizontal lines, vertical lines, and epipolar lines
-    - [x] Show epipolar lines from marker corners if ArUco markers are detected. If not, show epipolar lines from detected key points
+    - [x] Show epipolar lines from marker corners if ArUco markers are detected. If not, show epipolar lines from detected key points in scene
     - [x] Default algorithm for detecting key points is `ORB`, can be switched to `SIFT`
 - [ ] Chessboard calibration for stereo camera
     - [x] Calibration and save image
@@ -66,16 +67,30 @@
 - `v` or `V` to show vertical lines
 - `e` or `E` to show epipolar lines
     - `n`, `N`, `p`, or `P` to change algorithm
-- `s` or `S` to save the images
+- `s` or `S` to save the images (**Broken**)
 - `c` or `C` to toggle on calibration mode
     - `s` or `S` to save chessboard image
     - `c` or `C` to toggle off calibration mode and start calibration
 - `esc` to close program
 
 ## Goal
+1. Currently
+    - Add functionality for freeze frame, possible button `f`
+    - Move all the depth information outside
+        - display for each ArUco markers
+            - Show 4 corner points
+                - first line being ground truth
+                - second line being estimation
+                - third line being RealSense
+            - preferably (X, Y, Z) format
+    - Add button for marking ArUco on image
+        - maybe use red color, but still depends on whether it can be seen or not
+    - Fix broken save image functionality
+        - Depth images gets saved, but not the left and right images
 
-Allow loading back calibration parameters.
-Add rectifying image and show epipolar lines again.
+2. Next Step
+    - Allow loading back calibration parameters.
+    - Add rectifying image and show epipolar lines again.
 
 ## File Structure
 
