@@ -76,6 +76,7 @@ class OpencvUIController():
             'horizontal_lines': False,
             'vertical_lines': False,
             'epipolar_lines': False,
+            'display_aruco': False,
             'calibration_mode': False,
             'freeze_mode': False
         }
@@ -139,6 +140,29 @@ class OpencvUIController():
             key = cv2.pollKey() & 0xFF
             if self._handle_key_presses(key, left_gray_image, right_gray_image, first_depth_image, second_depth_image):
                 break
+
+    def _draw_aruco_rectangle(self, image, corners, marker_id):
+        """
+        Draw a rectangle from the 4 corner points with red color and display the marker ID.
+
+        Args:
+            image (np.ndarray): Image on which to draw the rectangle.
+            corners (np.ndarray): Corner points of the ArUco marker.
+            marker_id (int): ID of the ArUco marker.
+
+        Returns:
+            None.
+        """
+        logging.info("Drawing ArUco rectangle.")
+        corners = corners.reshape((4, 2)).astype(int)  # Ensure corners are integers
+        for i in range(4):
+            start_point = tuple(corners[i])
+            end_point = tuple(corners[(i + 1) % 4])
+            cv2.line(image, start_point, end_point, (0, 0, 255), 2)
+
+        # Add the marker ID at the top-left corner of the rectangle
+        top_left_corner = tuple((corners[0][0], corners[0][1] - 10))
+        cv2.putText(image, f"ID: {marker_id}", top_left_corner, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
     def _calibrate_cameras(self) -> None:
         """
@@ -262,7 +286,9 @@ class OpencvUIController():
             ord('c'): self._toggle_calibration_mode,
             ord('C'): self._toggle_calibration_mode,
             ord('f'): self._toggle_freeze_mode,
-            ord('F'): self._toggle_freeze_mode
+            ord('F'): self._toggle_freeze_mode,
+            ord('a'): lambda: self._toggle_option('display_aruco'),
+            ord('A'): lambda: self._toggle_option('display_aruco'),
         }
 
         # Execute the corresponding action if the key is in the dictionary
@@ -413,14 +439,6 @@ class OpencvUIController():
             info += f"Mean Depth (RealSense): {mean_depth_realsense:.2f}\n\n"
             return info
 
-        def get_mouse_coords():
-            if 0 <= self.mouse_coords['y'] < self.matrix_view_size[1] // 2:
-                if 0 <= self.mouse_coords['x'] < self.matrix_view_size[0] // 2:
-                    return (self.mouse_coords['x'], self.mouse_coords['y'])
-                if self.matrix_view_size[0] // 2 <= self.mouse_coords['x'] < self.matrix_view_size[0]:
-                    return (self.mouse_coords['x'] - self.matrix_view_size[0] // 2, self.mouse_coords['y'])
-            return (0, 0)
-
         if self.display_option['horizontal_lines']:
             draw_lines(left_colored, 20, 'horizontal')
             draw_lines(right_colored, 20, 'horizontal')
@@ -463,8 +481,14 @@ class OpencvUIController():
                 left_colored, right_colored = self.epipolar_detector.compute_epilines_from_scene(
                     left_colored, right_colored)
 
+        if self.display_option['display_aruco']:
+            logging.info("Display ArUco option is enabled. Drawing rectangles.")
+            for i, marker_id in enumerate(matching_ids_result):
+                self._draw_aruco_rectangle(left_colored, matching_corners_left[i], marker_id)
+                self._draw_aruco_rectangle(right_colored, matching_corners_right[i], marker_id)
+
         # Calculate mouse hover info
-        mouse_x, mouse_y = get_mouse_coords()
+        mouse_x, mouse_y = self.mouse_coords['x'], self.mouse_coords['y']
         if first_depth_image is not None:
             scaled_x = int(mouse_x * (self.camera_system.get_width() / (self.matrix_view_size[0] // 2)))
             scaled_y = int(mouse_y * (self.camera_system.get_height() / (self.matrix_view_size[1] // 2)))
@@ -555,7 +579,13 @@ class OpencvUIController():
         def _mouse_callback(event, x, y, _flags, _param):
             """Update the mouse position."""
             if event == cv2.EVENT_MOUSEMOVE:
-                self.mouse_coords['x'], self.mouse_coords['y'] = x, y
+                if 0 <= y < self.matrix_view_size[1] // 2:
+                    if 0 <= x < self.matrix_view_size[0] // 2:
+                        self.mouse_coords['x'], self.mouse_coords['y'] = x, y
+                    elif self.matrix_view_size[0] // 2 <= x < self.matrix_view_size[0]:
+                        self.mouse_coords['x'], self.mouse_coords['y'] = x - self.matrix_view_size[0] // 2, y
+                else:
+                    self.mouse_coords['x'], self.mouse_coords['y'] = 0, 0
 
         # Create a window and set the mouse callback
         cv2.namedWindow("Combined View (2x2)", cv2.WINDOW_NORMAL)

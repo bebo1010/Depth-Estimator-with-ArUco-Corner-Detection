@@ -47,18 +47,25 @@
         - [x] Dual RealSense camera
     - [x] Interface for FLIR cameras
     - [x] Add support for multiple RealSense cameras
-- [x] Display horizontal lines, vertical lines, and epipolar lines
-    - [x] Show epipolar lines from marker corners if ArUco markers are detected. If not, show epipolar lines from detected key points in scene
-    - [x] Default algorithm for detecting key points is `ORB`, can be switched to `SIFT`
+- [x] Display Functionality
+    - [x] Horizontal lines and Vertical lines
+    - [x] Epipolar lines
+        - If **ArUco** are detected
+            - Display epipolar lines from corner points
+        - If **ArUco** are not detected
+            - Display epipolar lines from key points of scene
+            - The method for detecting key points defaults to `ORB`
+                - Can be swapped to `SIFT`
+    - [x] Freeze frame
+    - [x] Information Panel
+        - [x] 3D position of 4 corner points of ArUco
+            - [x] Estimated 3D position
+            - [x] RealSense 3D position
+        - [x] Mouse hover 3D position
 - [ ] Chessboard calibration for stereo camera
     - [x] Calibration and save image
     - [ ] Load back the parameters and rectify the images
     - [ ] (Optional) Show reprojection error per image
-- [x] Information display to the right of matrix view
-    - [x] 3D position of 4 corner points of ArUco
-        - [x] Estimated 3D position
-        - [x] RealSense 3D position
-        - [x] Mouse hover 3D position
 - [x] Unit Tests
     - [x] ArUco detector
     - [x] Camera systems (not possible for FLIR cameras)
@@ -74,19 +81,15 @@
     - `n`, `N`, `p`, or `P` to change algorithm
 - `s` or `S` to save the images
 - `f` or `F` to freeze frame
+- `a` or `A` to display detected ArUco marker
 - `c` or `C` to toggle on calibration mode
     - `s` or `S` to save chessboard image
     - `c` or `C` to toggle off calibration mode and start calibration
 - `esc` to close program
 
 ## Goal
-1. Currently
-    - Add button for marking ArUco on image
-        - maybe use red color, but still depends on whether it can be seen or not
-
-2. Next Step
-    - Allow loading back calibration parameters.
-    - Add rectifying image and show epipolar lines again.
+- Allow loading back calibration parameters.
+- Add rectifying image and show epipolar lines again.
 
 ## File Structure
 
