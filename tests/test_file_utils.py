@@ -88,8 +88,8 @@ class TestFileUtils(unittest.TestCase):
         base_dir = "test_base_dir"
         setup_directories(base_dir)
         expected_calls = [
-            call(os.path.join(base_dir, "left_images"), exist_ok=True),
-            call(os.path.join(base_dir, "right_images"), exist_ok=True),
+            call(os.path.join(base_dir, "left_ArUco_images"), exist_ok=True),
+            call(os.path.join(base_dir, "right_ArUco_images"), exist_ok=True),
             call(os.path.join(base_dir, "depth_images"), exist_ok=True),
             call(os.path.join(base_dir, "left_chessboard_images"), exist_ok=True),
             call(os.path.join(base_dir, "right_chessboard_images"), exist_ok=True)

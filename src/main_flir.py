@@ -8,8 +8,12 @@ if __name__ == "__main__":
 
     FOCAL_LENGTH = 1060  # in pixels
     BASELINE = 80  # in mm
+    PRINCIPAL_POINT = (640, 360)  # unchecked in pixels
 
-    UI = OpencvUIController(system_prefix="GH3", focal_length=FOCAL_LENGTH, baseline=BASELINE)
+    UI = OpencvUIController(system_prefix="GH3",
+                             focal_length=FOCAL_LENGTH,
+                             baseline=BASELINE,
+                             principal_point=PRINCIPAL_POINT)
 
     CONFIG = "./src/camera_config/GH3_camera_config.yaml"
     SN1 = "21091478"

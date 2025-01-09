@@ -63,8 +63,8 @@ def setup_directories(base_dir: str) -> None:
     """
     os.makedirs(base_dir, exist_ok=True)
 
-    left_ir_dir = os.path.join(base_dir, "left_images")
-    right_ir_dir = os.path.join(base_dir, "right_images")
+    left_ir_dir = os.path.join(base_dir, "left_ArUco_images")
+    right_ir_dir = os.path.join(base_dir, "right_ArUco_images")
     depth_dir = os.path.join(base_dir, "depth_images")
     left_chessboard_dir = os.path.join(base_dir, "left_chessboard_images")
     right_chessboard_dir = os.path.join(base_dir, "right_chessboard_images")

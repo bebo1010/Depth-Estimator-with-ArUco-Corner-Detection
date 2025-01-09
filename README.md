@@ -39,16 +39,29 @@
     ```
 
 ## Functionality
-- [x] Read two Realsense IR camera streams and Realsense depth stream
-- [x] Detect ArUco markers for each stream
-    - [x] Compute depths with detected ArUco markers and get depth from Realsense depth stream
+- [x] Detect ArUco markers from left and right image
+    - [x] Compute depths with detected ArUco markers
 - [x] Include interfaces for other cameras
-    - [x] Interface for intel realsense cameras
+    - [x] Interface for intel RealSense cameras
+        - [x] Single RealSense camera
+        - [x] Dual RealSense camera
     - [x] Interface for FLIR cameras
-    - [x] Add support for multiple realsense cameras
-- [x] Display horizontal lines, vertical lines, and epipolar lines
-    - [x] Show epipolar lines from marker corners if ArUco markers are detected. If not, show epipolar lines from detected key points
-    - [x] Default algorithm for detecting key points is `ORB`, can be switched to `SIFT`
+    - [x] Add support for multiple RealSense cameras
+- [x] Display Functionality
+    - [x] Horizontal lines and Vertical lines
+    - [x] Epipolar lines
+        - If **ArUco** are detected
+            - Display epipolar lines from corner points
+        - If **ArUco** are not detected
+            - Display epipolar lines from key points of scene
+            - The method for detecting key points defaults to `ORB`
+                - Can be swapped to `SIFT`
+    - [x] Freeze frame
+    - [x] Information Panel
+        - [x] 3D position of 4 corner points of ArUco
+            - [x] Estimated 3D position
+            - [x] RealSense 3D position
+        - [x] Mouse hover 3D position
 - [ ] Chessboard calibration for stereo camera
     - [x] Calibration and save image
     - [ ] Load back the parameters and rectify the images
@@ -67,15 +80,16 @@
 - `e` or `E` to show epipolar lines
     - `n`, `N`, `p`, or `P` to change algorithm
 - `s` or `S` to save the images
+- `f` or `F` to freeze frame
+- `a` or `A` to display detected ArUco marker
 - `c` or `C` to toggle on calibration mode
     - `s` or `S` to save chessboard image
     - `c` or `C` to toggle off calibration mode and start calibration
 - `esc` to close program
 
 ## Goal
-
-Allow loading back calibration parameters.
-Add rectifying image and show epipolar lines again.
+- Allow loading back calibration parameters.
+- Add rectifying image and show epipolar lines again.
 
 ## File Structure
 
