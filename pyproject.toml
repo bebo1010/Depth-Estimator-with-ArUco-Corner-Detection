@@ -55,5 +55,6 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+    "pylint==3.2.7",
     "coverage==7.6.1"
 ]
