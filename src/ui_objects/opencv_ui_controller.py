@@ -63,8 +63,8 @@ class OpencvUIController():
         setup_logging(self.base_dir)
 
         self.mouse_coords = {'x': 0, 'y': 0}
-        self.window_size = (1920, 1200)
-        self.matrix_view_size = (1200, 1200)
+        self.window_size = (2000, 960)
+        self.matrix_view_size = (1280, 960)
         self._setup_window()
 
         self.camera_system = None
