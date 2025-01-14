@@ -213,21 +213,22 @@ class OpencvUIController():
 
         # Create a blank image with the desired window size
         window_image = np.zeros((self.window_size[1], self.window_size[0], 3), dtype=np.uint8)
+        window_image.fill(255)  # White background
         window_image[:image_height, :image_width] = combined_view
 
         # Add ArUco and mouse information to the right side of the window
         x0 = 20
         y0, dy = 30, 30
         cv2.putText(window_image, "Units: mm", (image_width + x0, y0),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)  # Black text
         for i, line in enumerate(aruco_info.split('\n')):
             y = y0 + (i + 1) * dy
             cv2.putText(window_image, line, (image_width + x0, y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)  # Black text
         for i, line in enumerate(mouse_info.split('\n')):
             y = y0 + (i + len(aruco_info.split('\n')) + 1) * dy
             cv2.putText(window_image, line, (image_width + x0, y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)  # Black text
 
         cv2.imshow("Combined View (2x2)", window_image)
 
