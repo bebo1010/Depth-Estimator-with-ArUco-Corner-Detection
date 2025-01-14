@@ -63,8 +63,8 @@ class OpencvUIController():
         setup_logging(self.base_dir)
 
         self.mouse_coords = {'x': 0, 'y': 0}
-        self.window_size = (1920, 1200)
-        self.matrix_view_size = (1200, 1200)
+        self.window_size = (2000, 960)
+        self.matrix_view_size = (1280, 960)
         self._setup_window()
 
         self.camera_system = None
@@ -213,21 +213,22 @@ class OpencvUIController():
 
         # Create a blank image with the desired window size
         window_image = np.zeros((self.window_size[1], self.window_size[0], 3), dtype=np.uint8)
+        window_image.fill(255)  # White background
         window_image[:image_height, :image_width] = combined_view
 
         # Add ArUco and mouse information to the right side of the window
         x0 = 20
         y0, dy = 30, 30
         cv2.putText(window_image, "Units: mm", (image_width + x0, y0),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)  # Black text
         for i, line in enumerate(aruco_info.split('\n')):
             y = y0 + (i + 1) * dy
             cv2.putText(window_image, line, (image_width + x0, y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)  # Black text
         for i, line in enumerate(mouse_info.split('\n')):
             y = y0 + (i + len(aruco_info.split('\n')) + 1) * dy
             cv2.putText(window_image, line, (image_width + x0, y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)  # Black text
 
         cv2.imshow("Combined View (2x2)", window_image)
 
@@ -426,17 +427,17 @@ class OpencvUIController():
             info += f"Estimated: ({estimated_3d_coords[0][0]:7.1f}, {estimated_3d_coords[0][1]:7.1f}, " \
                     f"{estimated_3d_coords[0][2]:7.1f}), ({estimated_3d_coords[1][0]:7.1f}, " \
                     f"{estimated_3d_coords[1][1]:7.1f}, {estimated_3d_coords[1][2]:7.1f})\n"
-            info += f"           ({estimated_3d_coords[2][0]:7.1f}, {estimated_3d_coords[2][1]:7.1f}, " \
+            info += f"            ({estimated_3d_coords[2][0]:7.1f}, {estimated_3d_coords[2][1]:7.1f}, " \
                     f"{estimated_3d_coords[2][2]:7.1f}), ({estimated_3d_coords[3][0]:7.1f}, " \
                     f"{estimated_3d_coords[3][1]:7.1f}, {estimated_3d_coords[3][2]:7.1f})\n"
-            info += f"Mean Depth (Estimated): {mean_depth_estimated:.2f}\n"
+            info += f"Mean Depth (Estimated): {mean_depth_estimated:7.2f}\n"
             info += f"RealSense: ({realsense_3d_coords[0][0]:7.1f}, {realsense_3d_coords[0][1]:7.1f}, " \
                     f"{realsense_3d_coords[0][2]:7.1f}), ({realsense_3d_coords[1][0]:7.1f}, " \
                     f"{realsense_3d_coords[1][1]:7.1f}, {realsense_3d_coords[1][2]:7.1f})\n"
-            info += f"           ({realsense_3d_coords[2][0]:7.1f}, {realsense_3d_coords[2][1]:7.1f}, " \
+            info += f"            ({realsense_3d_coords[2][0]:7.1f}, {realsense_3d_coords[2][1]:7.1f}, " \
                     f"{realsense_3d_coords[2][2]:7.1f}), ({realsense_3d_coords[3][0]:7.1f}, " \
                     f"{realsense_3d_coords[3][1]:7.1f}, {realsense_3d_coords[3][2]:7.1f})\n"
-            info += f"Mean Depth (RealSense): {mean_depth_realsense:.2f}\n\n"
+            info += f"Mean Depth (RealSense): {mean_depth_realsense:7.2f}\n\n"
             return info
 
         if self.display_option['horizontal_lines']:
