@@ -8,6 +8,7 @@ from typing import Tuple, Optional
 
 import cv2
 import numpy as np
+from PyQt5.QtWidgets import QApplication, QFileDialog, QMessageBox
 
 from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCalibrator
 from src.camera_objects import TwoCamerasSystem
@@ -73,6 +74,7 @@ class OpencvUIController():
         self.camera_params = {'focal_length': focal_length, 'baseline': baseline, 'principal_point': principal_point}
 
         self.display_option = {
+            'image_mode': False,
             'horizontal_lines': False,
             'vertical_lines': False,
             'epipolar_lines': False,
@@ -83,12 +85,15 @@ class OpencvUIController():
 
         self.epipolar_detector = EpipolarLineDetector()
 
-        self.calibration_mode = False
         self.chessboard_calibrator = ChessboardCalibrator()
         # small chessboard pattern size
         self.chessboard_calibrator.pattern_size = (10, 7)
         self.chessboard_calibrator.square_size_mm = 10
+
         self.image_points = {'left': [], 'right': []}
+
+        self.loaded_images = []
+        self.loaded_image_index = 0
 
     def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
         """
@@ -121,21 +126,24 @@ class OpencvUIController():
         while True:
             self._update_window_title()
 
-            if not self.display_option['freeze_mode']:
-                success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
-                _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
-                if not success:
-                    continue
+            if not self.display_option['image_mode']:
+                if not self.display_option['freeze_mode']:
+                    success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
+                    _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
+                    if not success:
+                        continue
 
-            if self.display_option['calibration_mode']:
-                self._process_and_draw_chessboard(left_gray_image, right_gray_image)
+                if self.display_option['calibration_mode']:
+                    self._process_and_draw_chessboard(left_gray_image, right_gray_image)
+                else:
+                    matching_ids_result, matching_corners_left, matching_corners_right = \
+                        self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
+                    self._process_and_draw_images(left_gray_image, right_gray_image,
+                                                  matching_ids_result, matching_corners_left, matching_corners_right,
+                                                  first_depth_image, second_depth_image)
+
             else:
-                matching_ids_result, matching_corners_left, matching_corners_right = \
-                    self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
-                self._process_and_draw_images(left_gray_image, right_gray_image,
-                                              matching_ids_result, matching_corners_left, matching_corners_right,
-                                              first_depth_image, second_depth_image)
-
+                self._display_loaded_images()
             # Check for key presses
             key = cv2.pollKey() & 0xFF
             if self._handle_key_presses(key, left_gray_image, right_gray_image, first_depth_image, second_depth_image):
@@ -269,7 +277,7 @@ class OpencvUIController():
         """
         # Define actions for each key
         actions = {
-            27: self._exit_program,  # ESC key
+            27: self._exit_or_switch_mode,  # ESC key
             ord('s'): lambda: self._save_images(left_gray_image, right_gray_image,
                                                 first_depth_image, second_depth_image),
             ord('S'): lambda: self._save_images(left_gray_image, right_gray_image,
@@ -280,31 +288,94 @@ class OpencvUIController():
             ord('V'): lambda: self._toggle_option('vertical_lines'),
             ord('e'): lambda: self._toggle_option('epipolar_lines'),
             ord('E'): lambda: self._toggle_option('epipolar_lines'),
-            ord('n'): self._next_detector,
-            ord('N'): self._next_detector,
-            ord('p'): self._previous_detector,
-            ord('P'): self._previous_detector,
+            ord('n'): lambda: self._navigate_images('next'),
+            ord('N'): lambda: self._navigate_images('next'),
+            ord('p'): lambda: self._navigate_images('previous'),
+            ord('P'): lambda: self._navigate_images('previous'),
             ord('c'): self._toggle_calibration_mode,
             ord('C'): self._toggle_calibration_mode,
             ord('f'): self._toggle_freeze_mode,
             ord('F'): self._toggle_freeze_mode,
             ord('a'): lambda: self._toggle_option('display_aruco'),
             ord('A'): lambda: self._toggle_option('display_aruco'),
+            ord('l'): self._load_images,
+            ord('L'): self._load_images,
         }
 
         # Execute the corresponding action if the key is in the dictionary
         if key in actions:
-            actions[key]()
-            return key == 27  # Return True if the ESC key was pressed
+            return actions[key]()
 
         return False
 
-    def _exit_program(self):
+    def _exit_or_switch_mode(self) -> bool:
+        """
+        Exit the program or switch from image mode to normal stream mode.
+
+        Returns:
+            bool: True if the application should exit, False otherwise.
+        """
+        if self.display_option['image_mode']:
+            self.display_option['image_mode'] = False
+            self._update_window_title()
+            return False
+
+        self._exit_program()
+        return True
+
+    def _navigate_images(self, direction: str) -> bool:
+        """
+        Navigate through the loaded images or switch detectors based on the current mode.
+
+        Args:
+            direction (str): Direction to navigate ('next' or 'previous').
+
+        Returns:
+            bool: Always returns False.
+        """
+        if self.display_option['image_mode']:
+            if direction == 'next':
+                self.loaded_image_index = (self.loaded_image_index + 1) % len(self.loaded_images)
+            elif direction == 'previous':
+                self.loaded_image_index = (self.loaded_image_index - 1) % len(self.loaded_images)
+
+            self._display_loaded_images()
+
+        elif self.display_option['epipolar_lines']:
+            if direction == 'next':
+                self.epipolar_detector.switch_detector('n')
+            elif direction == 'previous':
+                self.epipolar_detector.switch_detector('p')
+
+            self._update_window_title()
+
+        return False
+
+    def _exit_program(self) -> None:
+        """
+        Terminates the program by releasing the camera system and closing all OpenCV windows.
+        This method logs the termination event,
+        releases the camera resources,
+        and closes any OpenCV windows that are open.
+        """
         logging.info("Program terminated by user.")
         self.camera_system.release()
         cv2.destroyAllWindows()
 
-    def _save_images(self, left_gray_image, right_gray_image, first_depth_image, second_depth_image):
+    def _save_images(self, left_gray_image, right_gray_image, first_depth_image, second_depth_image) -> bool:
+        """
+        Saves the provided images based on the current display option.
+        If the system is in calibration mode, the method saves chessboard images.
+        Otherwise, it saves the provided images with a specified prefix and increments the image index.
+        Args:
+            left_gray_image (numpy.ndarray): The left grayscale image to be saved.
+            right_gray_image (numpy.ndarray): The right grayscale image to be saved.
+            first_depth_image (numpy.ndarray): The first depth image to be saved.
+            second_depth_image (numpy.ndarray): The second depth image to be saved.
+        Returns:
+            bool: Always returns False.
+        """
+
         if self.display_option['calibration_mode']:
             self._save_chessboard_images(left_gray_image, right_gray_image)
         else:
@@ -313,31 +384,55 @@ class OpencvUIController():
                         prefix="ArUco")
             self.image_index += 1
 
-    def _toggle_option(self, option):
+        return False
+
+    def _toggle_option(self, option) -> bool:
+        """
+        Toggles the state of a given display option and updates the window title.
+        Args:
+            option (str): The display option to toggle.
+        Returns:
+            bool: Always returns False.
+        """
+
         self.display_option[option] = not self.display_option[option]
         self._update_window_title()
 
-    def _next_detector(self):
-        if self.display_option['epipolar_lines']:
-            self.epipolar_detector.switch_detector('n')
-            self._update_window_title()
+        return False
 
-    def _previous_detector(self):
-        if self.display_option['epipolar_lines']:
-            self.epipolar_detector.switch_detector('p')
-            self._update_window_title()
+    def _toggle_calibration_mode(self) -> bool:
+        """
+        Toggles the calibration mode for the UI.
+        This method switches the 'calibration_mode' in the display options.
+        If 'calibration_mode' is enabled, it disables 'freeze_mode'.
+        If 'calibration_mode' is disabled, it triggers the camera calibration process.
+        Returns:
+            bool: Always returns False.
+        """
 
-    def _toggle_calibration_mode(self):
         self.display_option['calibration_mode'] = not self.display_option['calibration_mode']
         if self.display_option['calibration_mode']:
             self.display_option['freeze_mode'] = False
         if not self.display_option['calibration_mode']:
             self._calibrate_cameras()
 
-    def _toggle_freeze_mode(self):
+        return False
+
+    def _toggle_freeze_mode(self) -> bool:
+        """
+        Toggles the freeze mode in the display options.
+        This method switches the 'freeze_mode' flag in the display_option dictionary
+        to its opposite state. If 'freeze_mode' is enabled, it also disables the
+        'calibration_mode'.
+        Returns:
+            bool: Always returns False.
+        """
+
         self.display_option['freeze_mode'] = not self.display_option['freeze_mode']
         if self.display_option['freeze_mode']:
             self.display_option['calibration_mode'] = False
+
+        return False
 
     def _process_and_draw_chessboard(self, left_gray_image: np.ndarray, right_gray_image: np.ndarray) -> None:
         """
@@ -600,10 +695,100 @@ class OpencvUIController():
         if self.display_option['calibration_mode']:
             cv2.setWindowTitle("Combined View (2x2)",
                                f"Combined View (2x2) - Calibration Mode - Images Saved: {self.chessboard_image_index}")
+
         elif self.display_option['epipolar_lines']:
             detector_name = self.epipolar_detector.detectors[self.epipolar_detector.detector_index][0]
             cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Detector: {detector_name}")
+
+        elif self.display_option['freeze_mode']:
+            cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2) - Freeze Mode")
+
+        elif self.display_option['image_mode']:
+            total_images = len(self.loaded_images)
+            current_index = self.loaded_image_index + 1
+            cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Image {current_index}/{total_images}")
+
         else:
             cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2)")
-        if self.display_option['freeze_mode']:
-            cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2) - Freeze Mode")
+
+    def _load_images(self) -> bool:
+        """
+        Load images from a selected directory.
+
+        Returns:
+            bool: Always returns False.
+        """
+        _ = QApplication([])
+        selected_dir = QFileDialog.getExistingDirectory(None, "Select Directory", "Db/")
+
+        if not selected_dir:
+            QMessageBox.critical(None, "Error", "No directory selected.")
+            return False
+
+        left_aruco_dir = os.path.join(selected_dir, "left_ArUco_images")
+        right_aruco_dir = os.path.join(selected_dir, "right_ArUco_images")
+        depth_dir = os.path.join(selected_dir, "depth_images")
+
+        if not os.path.exists(left_aruco_dir) or not os.path.exists(right_aruco_dir):
+            QMessageBox.critical(None, "Error", "Invalid directory structure.")
+            return False
+
+        left_images = sorted([os.path.join(left_aruco_dir, f) \
+                              for f in os.listdir(left_aruco_dir) \
+                              if f.endswith(".png")])
+        right_images = sorted([os.path.join(right_aruco_dir, f) \
+                               for f in os.listdir(right_aruco_dir) \
+                               if f.endswith(".png")])
+        left_depth_images = sorted([os.path.join(depth_dir, f) \
+                                    for f in os.listdir(depth_dir) \
+                                    if f.startswith("depth_image1_") and f.endswith(".npy")])
+        right_depth_images = sorted([os.path.join(depth_dir, f) \
+                                     for f in os.listdir(depth_dir) \
+                                     if f.startswith("depth_image2_") and f.endswith(".npy")])
+
+        if not left_images or not right_images or len(left_images) != len(right_images):
+            QMessageBox.critical(None, "Error", "No images found or mismatched image counts.")
+            return False
+
+        # Pad depth images if they do not exist
+        if not left_depth_images:
+            left_depth_images = [None] * len(left_images)
+        if not right_depth_images:
+            right_depth_images = [None] * len(right_images)
+
+        self.loaded_images = list(zip(left_images, right_images, left_depth_images, right_depth_images))
+        self.loaded_image_index = 0
+        self.display_option['image_mode'] = True
+        self._display_loaded_images()
+
+        return False
+
+    def _display_loaded_images(self):
+        """
+        Display the loaded images.
+
+        Returns:
+            None.
+        """
+        if not hasattr(self, 'loaded_images') or not self.loaded_images:
+            return
+
+        left_image_path, right_image_path, \
+        left_depth_image_path, right_depth_image_path = self.loaded_images[self.loaded_image_index]
+
+        left_image = cv2.imread(left_image_path, cv2.IMREAD_GRAYSCALE)
+        right_image = cv2.imread(right_image_path, cv2.IMREAD_GRAYSCALE)
+        left_depth_image = np.load(left_depth_image_path) if left_depth_image_path else np.zeros_like(left_image)
+        right_depth_image = np.load(right_depth_image_path) if right_depth_image_path else np.zeros_like(right_image)
+
+        if left_image is None or right_image is None:
+            QMessageBox.critical(None, "Error", "Failed to load images.")
+            return
+
+        matching_ids_result, matching_corners_left, matching_corners_right = \
+            self.aruco_detector.detect_aruco_two_images(left_image, right_image)
+
+        self._process_and_draw_images(left_image, right_image,
+                                      matching_ids_result, matching_corners_left, matching_corners_right,
+                                      left_depth_image, right_depth_image)
+        self._update_window_title()
