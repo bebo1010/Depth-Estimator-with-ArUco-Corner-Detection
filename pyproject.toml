@@ -48,7 +48,10 @@ dependencies = [
     "opencv_contrib_python==4.7.0.68",
     "opencv_python==4.7.0.68",
     "pyrealsense2==2.55.1.6486",
-    "PyYAML==6.0.2"
+    "PyYAML==6.0.2",
+    "PyQt5==5.15.11",
+    "PyQt5-Qt5==5.15.2",
+    "PyQt5_sip==12.15.0"
 ]
 # require install PySpin with pip install spinnaker_python-4.0.0.116-cp38-cp38-win_amd64.whl
 # link to wheel file can be found in README

@@ -66,6 +66,7 @@
     - [x] Calibration and save image
     - [ ] Load back the parameters and rectify the images
     - [ ] (Optional) Show reprojection error per image
+- [x] Load back the saved images
 - [x] Unit Tests
     - [x] ArUco detector
     - [x] Camera systems (not possible for FLIR cameras)
@@ -85,6 +86,8 @@
 - `c` or `C` to toggle on calibration mode
     - `s` or `S` to save chessboard image
     - `c` or `C` to toggle off calibration mode and start calibration
+- `l` or `L` to load back previous saved images
+    - `n`, `N`, `p`, or `P` to change image pairs
 - `esc` to close program
 
 ## Goal
