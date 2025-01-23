@@ -73,6 +73,8 @@
     - [x] Utility functions
     - [x] Epipolar line detector
     - [x] Chessboard Calibration
+    - [x] File utility functions
+    - [x] Display utility functions
 
 ### buttons for opencv_ui_controller.py
 
