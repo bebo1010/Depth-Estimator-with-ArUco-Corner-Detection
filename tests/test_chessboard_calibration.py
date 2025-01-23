@@ -1,6 +1,7 @@
 """
 Unit tests for the ChessboardCalibrator class.
 """
+import logging
 
 from typing import List, Tuple
 import unittest
@@ -20,7 +21,15 @@ class TestChessboardCalibrator(unittest.TestCase):
         """
         Set up the test case environment.
         """
+        logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
+
         self.calibrator = ChessboardCalibrator()
+
+    def tearDown(self):
+        """
+        Clean up the test environment after each test.
+        """
+        logging.disable(logging.NOTSET)  # Re-enable logging after tests
 
     def test_initialization(self):
         """

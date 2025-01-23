@@ -3,16 +3,31 @@ Unit tests for the display_utils module.
 
 This module contains unit tests for the functions defined in the display_utils module.
 """
-
+import logging
 import unittest
+
 import numpy as np
 import cv2
+
 from src.utils.display_utils import draw_lines, apply_colormap, draw_aruco_rectangle
 
 class TestDisplayUtils(unittest.TestCase):
     """
     Test cases for the display_utils module.
     """
+
+    def setUp(self):
+        """
+        Set up the test case environment.
+        """
+        logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
+
+
+    def tearDown(self):
+        """
+        Clean up the test environment after each test.
+        """
+        logging.disable(logging.NOTSET)  # Re-enable logging after tests
 
     def test_draw_lines_horizontal(self):
         """
