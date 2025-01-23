@@ -526,6 +526,10 @@ class OpencvUIController():
             info += f"            ({estimated_3d_coords[2][0]:7.1f}, {estimated_3d_coords[2][1]:7.1f}, " \
                     f"{estimated_3d_coords[2][2]:7.1f}), ({estimated_3d_coords[3][0]:7.1f}, " \
                     f"{estimated_3d_coords[3][1]:7.1f}, {estimated_3d_coords[3][2]:7.1f})\n"
+            length_x_estimated = np.abs(estimated_3d_coords[0][0] - estimated_3d_coords[1][0])
+            length_y_estimated = np.abs(estimated_3d_coords[0][1] - estimated_3d_coords[2][1])
+            info += f"Length X (Estimated): {length_x_estimated:7.2f}, " \
+                    f"Length Y (Estimated): {length_y_estimated:7.2f}\n"
             info += f"Mean Depth (Estimated): {mean_depth_estimated:7.2f}\n"
             info += f"RealSense: ({realsense_3d_coords[0][0]:7.1f}, {realsense_3d_coords[0][1]:7.1f}, " \
                     f"{realsense_3d_coords[0][2]:7.1f}), ({realsense_3d_coords[1][0]:7.1f}, " \
@@ -533,6 +537,10 @@ class OpencvUIController():
             info += f"            ({realsense_3d_coords[2][0]:7.1f}, {realsense_3d_coords[2][1]:7.1f}, " \
                     f"{realsense_3d_coords[2][2]:7.1f}), ({realsense_3d_coords[3][0]:7.1f}, " \
                     f"{realsense_3d_coords[3][1]:7.1f}, {realsense_3d_coords[3][2]:7.1f})\n"
+            length_x_realsense = np.abs(realsense_3d_coords[0][0] - realsense_3d_coords[1][0])
+            length_y_realsense = np.abs(realsense_3d_coords[0][1] - realsense_3d_coords[2][1])
+            info += f"Length X (RealSense): {length_x_realsense:7.2f}, " \
+                    f"Length Y (RealSense): {length_y_realsense:7.2f}\n"
             info += f"Mean Depth (RealSense): {mean_depth_realsense:7.2f}\n\n"
             return info
 
