@@ -211,7 +211,7 @@ class TestFileUtils(unittest.TestCase):
         """
         Test loading images from an invalid directory structure.
         """
-        mock_exists.side_effect = lambda path: False if "left_ArUco_images" in path else True
+        mock_exists.side_effect = lambda path: "left_ArUco_images" in path
 
         loaded_images, error = load_images_from_directory("test_directory")
         self.assertIsNotNone(error)
