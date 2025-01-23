@@ -5,7 +5,7 @@ such as determining the starting index for image files in a directory.
 
 import os
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 
 import yaml
 import cv2
@@ -158,3 +158,41 @@ def save_images(base_dir: str,
 
     # Log all the saved paths
     logging.info(", ".join(log_message))
+
+def load_images_from_directory(selected_dir: str) -> Tuple[Optional[list], Optional[str]]:
+    """
+    Load images from a selected directory.
+
+    Args:
+        selected_dir (str): The directory to load images from.
+
+    Returns:
+        Tuple[Optional[list], Optional[str]]:
+            - List of tuples containing paths to left, right, and depth images.
+            - Error message if any error occurs, otherwise None.
+    """
+    left_aruco_dir = os.path.join(selected_dir, "left_ArUco_images")
+    right_aruco_dir = os.path.join(selected_dir, "right_ArUco_images")
+    depth_dir = os.path.join(selected_dir, "depth_images")
+
+    if not os.path.exists(left_aruco_dir) or not os.path.exists(right_aruco_dir):
+        return None, "Invalid directory structure."
+
+    left_images = sorted([os.path.join(left_aruco_dir, f) for f in os.listdir(left_aruco_dir) if f.endswith(".png")])
+    right_images = sorted([os.path.join(right_aruco_dir, f) for f in os.listdir(right_aruco_dir) if f.endswith(".png")])
+    left_depth_images = sorted([os.path.join(depth_dir, f) for f in os.listdir(depth_dir) \
+                                if f.startswith("depth_image1_") and f.endswith(".npy")])
+    right_depth_images = sorted([os.path.join(depth_dir, f) for f in os.listdir(depth_dir) \
+                                 if f.startswith("depth_image2_") and f.endswith(".npy")])
+
+    if not left_images or not right_images or len(left_images) != len(right_images):
+        return None, "No images found or mismatched image counts."
+
+    # Pad depth images if they do not exist
+    if not left_depth_images:
+        left_depth_images = [None] * len(left_images)
+    if not right_depth_images:
+        right_depth_images = [None] * len(right_images)
+
+    loaded_images = list(zip(left_images, right_images, left_depth_images, right_depth_images))
+    return loaded_images, None

@@ -1,6 +1,7 @@
 """
 Unit tests for the ArUcoDetector class.
 """
+import logging
 
 import unittest
 import coverage
@@ -19,11 +20,20 @@ class TestArUcoDetector(unittest.TestCase):
         """
         Set up the test environment before each test.
         """
+        logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
+
         self.detector = ArUcoDetector()
+
         # Create a dummy image with ArUco markers for testing
         self.image = np.full((200, 200), fill_value=255, dtype=np.uint8)
         marker = cv2.aruco.generateImageMarker(self.detector.aruco_dict, 0, 100)
         self.image[50:150, 50:150] = marker  # Place the marker in the center with a white border
+
+    def tearDown(self):
+        """
+        Clean up the test environment after each test.
+        """
+        logging.disable(logging.NOTSET)  # Re-enable logging after tests
 
     def test_detect_aruco(self):
         """

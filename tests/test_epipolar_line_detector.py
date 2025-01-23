@@ -106,7 +106,7 @@ class TestEpipolarLineDetector(unittest.TestCase):
         """
         self.detector.set_feature_detector(cv2.ORB_create())
         left_image_with_lines, right_image_with_lines = \
-            self.detector.compute_epilines_from_scene(self.left_image, self.right_image)
+            self.detector.draw_epilines_from_scene(self.left_image, self.right_image)
         self.assertEqual(left_image_with_lines.shape, self.left_image.shape)
         self.assertEqual(right_image_with_lines.shape, self.right_image.shape)
 
@@ -116,7 +116,7 @@ class TestEpipolarLineDetector(unittest.TestCase):
 
         This method verifies that epilines can be computed from corner points and drawn on the images correctly.
         """
-        left_image_with_lines, right_image_with_lines = self.detector.compute_epilines_from_corners(
+        left_image_with_lines, right_image_with_lines = self.detector.draw_epilines_from_corners(
             self.left_image, self.right_image, self.corners_left, self.corners_right)
         self.assertEqual(left_image_with_lines.shape, self.left_image.shape)
         self.assertEqual(right_image_with_lines.shape, self.right_image.shape)
