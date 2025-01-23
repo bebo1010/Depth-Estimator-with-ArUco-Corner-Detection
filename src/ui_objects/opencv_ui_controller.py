@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QApplication, QFileDialog, QMessageBox
 from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCalibrator
 from src.camera_objects import TwoCamerasSystem
 from src.utils import get_starting_index, setup_directories, setup_logging, save_images, draw_lines, \
-    apply_colormap, draw_aruco_rectangle
+    apply_colormap, draw_aruco_rectangle, load_images_from_directory
 
 class OpencvUIController():
     """
@@ -723,38 +723,12 @@ class OpencvUIController():
             QMessageBox.critical(None, "Error", "No directory selected.")
             return False
 
-        left_aruco_dir = os.path.join(selected_dir, "left_ArUco_images")
-        right_aruco_dir = os.path.join(selected_dir, "right_ArUco_images")
-        depth_dir = os.path.join(selected_dir, "depth_images")
-
-        if not os.path.exists(left_aruco_dir) or not os.path.exists(right_aruco_dir):
-            QMessageBox.critical(None, "Error", "Invalid directory structure.")
+        loaded_images, error = load_images_from_directory(selected_dir)
+        if error:
+            QMessageBox.critical(None, "Error", error)
             return False
 
-        left_images = sorted([os.path.join(left_aruco_dir, f) \
-                              for f in os.listdir(left_aruco_dir) \
-                              if f.endswith(".png")])
-        right_images = sorted([os.path.join(right_aruco_dir, f) \
-                               for f in os.listdir(right_aruco_dir) \
-                               if f.endswith(".png")])
-        left_depth_images = sorted([os.path.join(depth_dir, f) \
-                                    for f in os.listdir(depth_dir) \
-                                    if f.startswith("depth_image1_") and f.endswith(".npy")])
-        right_depth_images = sorted([os.path.join(depth_dir, f) \
-                                     for f in os.listdir(depth_dir) \
-                                     if f.startswith("depth_image2_") and f.endswith(".npy")])
-
-        if not left_images or not right_images or len(left_images) != len(right_images):
-            QMessageBox.critical(None, "Error", "No images found or mismatched image counts.")
-            return False
-
-        # Pad depth images if they do not exist
-        if not left_depth_images:
-            left_depth_images = [None] * len(left_images)
-        if not right_depth_images:
-            right_depth_images = [None] * len(right_images)
-
-        self.loaded_images = list(zip(left_images, right_images, left_depth_images, right_depth_images))
+        self.loaded_images = loaded_images
         self.loaded_image_index = 0
         self.display_option['image_mode'] = True
         self._display_loaded_images()
