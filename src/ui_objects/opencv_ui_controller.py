@@ -12,7 +12,8 @@ from PyQt5.QtWidgets import QApplication, QFileDialog, QMessageBox
 
 from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCalibrator
 from src.camera_objects import TwoCamerasSystem
-from src.utils import get_starting_index, setup_directories, setup_logging, save_images
+from src.utils import get_starting_index, setup_directories, setup_logging, save_images, draw_lines, \
+    apply_colormap, draw_aruco_rectangle
 
 class OpencvUIController():
     """
@@ -499,16 +500,16 @@ class OpencvUIController():
         left_colored = cv2.cvtColor(left_gray_image, cv2.COLOR_GRAY2BGR)
         right_colored = cv2.cvtColor(right_gray_image, cv2.COLOR_GRAY2BGR)
 
-        def draw_lines(image, step, orientation):
-            for i in range(0, image.shape[0 if orientation == 'horizontal' else 1], step):
-                if orientation == 'horizontal':
-                    cv2.line(image, (0, i), (image.shape[1], i), (0, 0, 255), 1)
-                else:
-                    cv2.line(image, (i, 0), (i, image.shape[0]), (0, 0, 255), 1)
+        if self.display_option['horizontal_lines']:
+            draw_lines(left_colored, 20, 'horizontal')
+            draw_lines(right_colored, 20, 'horizontal')
 
-        def apply_colormap(depth_image):
-            return np.zeros_like(left_colored) if depth_image is None else \
-                cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+        if self.display_option['vertical_lines']:
+            draw_lines(left_colored, 20, 'vertical')
+            draw_lines(right_colored, 20, 'vertical')
+
+        first_depth_colormap = apply_colormap(first_depth_image, left_colored)
+        second_depth_colormap = apply_colormap(second_depth_image, left_colored)
 
         def calculate_3d_coords(xs, ys, depths):
             return [((x - self.camera_params['principal_point'][0]) * depth / self.camera_params['focal_length'],
@@ -535,17 +536,6 @@ class OpencvUIController():
             info += f"Mean Depth (RealSense): {mean_depth_realsense:7.2f}\n\n"
             return info
 
-        if self.display_option['horizontal_lines']:
-            draw_lines(left_colored, 20, 'horizontal')
-            draw_lines(right_colored, 20, 'horizontal')
-
-        if self.display_option['vertical_lines']:
-            draw_lines(left_colored, 20, 'vertical')
-            draw_lines(right_colored, 20, 'vertical')
-
-        first_depth_colormap = apply_colormap(first_depth_image)
-        second_depth_colormap = apply_colormap(second_depth_image)
-
         aruco_info = ""
         for i, marker_id in enumerate(matching_ids_result):
             disparities, mean_disparity, variance_disparity, estimated_depth_mm, realsense_depth_mm = \
@@ -571,17 +561,17 @@ class OpencvUIController():
 
         if self.display_option['epipolar_lines']:
             if len(matching_ids_result) > 0 and self.epipolar_detector.fundamental_matrix is not None:
-                left_colored, right_colored = self.epipolar_detector.compute_epilines_from_corners(
+                left_colored, right_colored = self.epipolar_detector.draw_epilines_from_corners(
                     left_colored, right_colored, matching_corners_left, matching_corners_right)
             else:
-                left_colored, right_colored = self.epipolar_detector.compute_epilines_from_scene(
+                left_colored, right_colored = self.epipolar_detector.draw_epilines_from_scene(
                     left_colored, right_colored)
 
         if self.display_option['display_aruco']:
             logging.info("Display ArUco option is enabled. Drawing rectangles.")
             for i, marker_id in enumerate(matching_ids_result):
-                self._draw_aruco_rectangle(left_colored, matching_corners_left[i], marker_id)
-                self._draw_aruco_rectangle(right_colored, matching_corners_right[i], marker_id)
+                draw_aruco_rectangle(left_colored, matching_corners_left[i], marker_id)
+                draw_aruco_rectangle(right_colored, matching_corners_right[i], marker_id)
 
         # Calculate mouse hover info
         mouse_x, mouse_y = self.mouse_coords['x'], self.mouse_coords['y']

@@ -74,7 +74,7 @@ class EpipolarLineDetector:
         self.set_feature_detector(self.detectors[self.detector_index][1])
         logging.info("Switched feature detector to: %s", self.detectors[self.detector_index][0])
 
-    def compute_epilines_from_scene(self,
+    def draw_epilines_from_scene(self,
                          left_image: np.ndarray,
                          right_image: np.ndarray
                          ) -> Tuple[np.ndarray, np.ndarray]:
@@ -144,7 +144,7 @@ class EpipolarLineDetector:
         logging.info("Epipolar lines computed and drawn on images.")
         return left_image_with_lines, right_image_with_lines
 
-    def compute_epilines_from_corners(self,
+    def draw_epilines_from_corners(self,
                                       left_image: np.ndarray,
                                       right_image: np.ndarray,
                                       corners_left: np.ndarray,
