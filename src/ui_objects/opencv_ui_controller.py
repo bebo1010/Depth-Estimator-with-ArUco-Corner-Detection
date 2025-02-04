@@ -5,7 +5,6 @@ import os
 from datetime import datetime
 import logging
 from typing import Tuple, Optional
-import json
 
 import cv2
 import numpy as np
@@ -15,6 +14,7 @@ from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCa
 from src.camera_objects import TwoCamerasSystem
 from src.utils import get_starting_index, setup_directories, setup_logging, save_images, draw_lines, \
     apply_colormap, draw_aruco_rectangle, load_images_from_directory
+from src.utils.file_utils import save_setup_info, load_setup_info
 
 class OpencvUIController():
     """
@@ -73,7 +73,14 @@ class OpencvUIController():
         self.camera_system = None
         self.aruco_detector = ArUcoDetector()
 
-        self.camera_params = {'focal_length': focal_length, 'baseline': baseline, 'principal_point': principal_point}
+        self.camera_params = {
+            'system_prefix': system_prefix,
+            'focal_length': focal_length,
+            'baseline': baseline,
+            'principal_point': principal_point,
+            'width': None,
+            'height': None
+        }
 
         self.display_option = {
             'image_mode': False,
@@ -108,7 +115,9 @@ class OpencvUIController():
         No return.
         """
         self.camera_system = camera_system
-        self._save_setup_info()
+        self.camera_params['width'] = self.camera_system.get_width()
+        self.camera_params['height'] = self.camera_system.get_height()
+        save_setup_info(self.base_dir, self.camera_params)
 
     def start(self) -> None:
         """
@@ -183,7 +192,7 @@ class OpencvUIController():
             None.
         """
         if self.image_points['left'] and self.image_points['right']:
-            image_size = (self.camera_system.get_width(), self.camera_system.get_height())
+            image_size = (self.camera_params['width'], self.camera_params['height'])
             success = self.chessboard_calibrator.calibrate_stereo_camera(self.image_points['left'],
                                                                          self.image_points['right'],
                                                                          image_size)
@@ -452,9 +461,12 @@ class OpencvUIController():
 
         # Downsample the images by the scale factor
         left_small = cv2.resize(left_gray_image,
-                                (left_gray_image.shape[1] // scale_factor, left_gray_image.shape[0] // scale_factor))
+                                (self.camera_params['width'] // scale_factor,
+                                 self.camera_params['height'] // scale_factor))
+
         right_small = cv2.resize(right_gray_image,
-                                 (right_gray_image.shape[1] // scale_factor, right_gray_image.shape[0] // scale_factor))
+                                 (self.camera_params['width'] // scale_factor,
+                                  self.camera_params['height'] // scale_factor))
 
         # Detect chessboard corners on the downsampled images
         ret_left, corners_left_small = self.chessboard_calibrator.detect_chessboard_corners(left_small)
@@ -585,8 +597,8 @@ class OpencvUIController():
         # Calculate mouse hover info
         mouse_x, mouse_y = self.mouse_coords['x'], self.mouse_coords['y']
         if first_depth_image is not None:
-            scaled_x = int(mouse_x * (left_gray_image.shape[1] / (self.matrix_view_size[0] // 2)))
-            scaled_y = int(mouse_y * (left_gray_image.shape[0] / (self.matrix_view_size[1] // 2)))
+            scaled_x = int(mouse_x * (self.camera_params['width'] / (self.matrix_view_size[0] // 2)))
+            scaled_y = int(mouse_y * (self.camera_params['height'] / (self.matrix_view_size[1] // 2)))
 
             depth_value = first_depth_image[scaled_y, scaled_x]
 
@@ -634,8 +646,8 @@ class OpencvUIController():
         realsense_depth_mm = np.zeros_like(estimated_depth_mm)
         if depth_image is not None:
             for j, (cx, cy) in enumerate(matching_corners_left):
-                realsense_depth_mm[j] = depth_image[min(max(int(cy), 0), depth_image.shape[0] - 1),
-                                               min(max(int(cx), 0), depth_image.shape[1] - 1)]
+                realsense_depth_mm[j] = depth_image[min(max(int(cy), 0), self.camera_params['height'] - 1),
+                                               min(max(int(cx), 0), self.camera_params['width'] - 1)]
 
         return disparities, mean_disparity, variance_disparity, estimated_depth_mm, realsense_depth_mm
 
@@ -726,9 +738,21 @@ class OpencvUIController():
             QMessageBox.critical(None, "Error", "No directory selected.")
             return False
 
-        if not self._load_setup_info(selected_dir):
+        setup_info = load_setup_info(selected_dir)
+        if not setup_info:
             QMessageBox.critical(None, "Error", "Failed to load setup information.")
             return False
+
+        self.camera_params = {
+            'system_prefix': setup_info['system_prefix'],
+            'focal_length': setup_info['focal_length'],
+            'baseline': setup_info['baseline'],
+            'principal_point': tuple(setup_info['principal_point']),
+            'width': setup_info['width'],
+            'height': setup_info['height']
+        }
+        self.base_dir = selected_dir
+        self._update_window_title(self.camera_params['system_prefix'])
 
         loaded_images, error = load_images_from_directory(selected_dir)
         if error:
@@ -770,51 +794,4 @@ class OpencvUIController():
         self._process_and_draw_images(left_image, right_image,
                                       matching_ids_result, matching_corners_left, matching_corners_right,
                                       left_depth_image, right_depth_image)
-        self._update_window_title()
-
-    def _save_setup_info(self) -> None:
-        """
-        Save the setup information to a JSON file.
-
-        Returns:
-        No return.
-        """
-        setup_info = {
-            "system_prefix": self.base_dir.split("_")[0].split("\\")[-1],
-            "focal_length": self.camera_params['focal_length'],
-            "baseline": self.camera_params['baseline'],
-            "width": self.camera_system.get_width(),
-            "height": self.camera_system.get_height(),
-            "principal_point": self.camera_params['principal_point']
-        }
-        setup_path = os.path.join(self.base_dir, "setup.json")
-        with open(setup_path, 'w', encoding="utf-8") as f:
-            json.dump(setup_info, f, indent=4)
-
-    def _load_setup_info(self, directory: str) -> bool:
-        """
-        Load the setup information from a JSON file.
-
-        Args:
-            directory (str): The directory to load the setup information from.
-
-        Returns:
-            bool: True if the setup information was loaded successfully, False otherwise.
-        """
-        setup_path = os.path.join(directory, "setup.json")
-        if not os.path.exists(setup_path):
-            logging.warning("Setup file not found.")
-            return False
-
-        with open(setup_path, 'r', encoding="utf-8") as f:
-            setup_info = json.load(f)
-
-        self.camera_params = {
-            'focal_length': setup_info['focal_length'],
-            'baseline': setup_info['baseline'],
-            'principal_point': tuple(setup_info['principal_point'])
-        }
-        self.base_dir = directory
-        self._update_window_title(setup_info['system_prefix'])
-
-        return True
+        self._update_window_title(self.camera_params['system_prefix'])
