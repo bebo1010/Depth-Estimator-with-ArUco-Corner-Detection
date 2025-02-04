@@ -41,30 +41,13 @@ class OpencvUIController():
         _setup_window() -> None
         _update_window_title(bool) -> None
     """
-    def __init__(self,
-                 system_prefix: str,
-                 focal_length: float,
-                 baseline: float,
-                 principal_point: Tuple[int, int]) -> None:
+    def __init__(self) -> None:
         """
-        Initialize UI controller.
-
-        args:
-        No arguments.
-
-        returns:
-        No return.
+        Initialize UI controller without parameters.
         """
-        self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
-        left_ir_dir = os.path.join(self.base_dir, "left_ArUco_images")
-        left_chessboard_dir = os.path.join(self.base_dir, "left_chessboard_images")
-
-        setup_directories(self.base_dir)
-        self.image_index = get_starting_index(left_ir_dir)
-        self.chessboard_image_index = get_starting_index(left_chessboard_dir) - 1
-
-        setup_logging(self.base_dir)
-
+        self.base_dir = None
+        self.image_index = 0
+        self.chessboard_image_index = 0
         self.mouse_coords = {'x': 0, 'y': 0}
         self.window_size = (2000, 960)
         self.matrix_view_size = (1280, 960)
@@ -74,10 +57,10 @@ class OpencvUIController():
         self.aruco_detector = ArUcoDetector()
 
         self.camera_params = {
-            'system_prefix': system_prefix,
-            'focal_length': focal_length,
-            'baseline': baseline,
-            'principal_point': principal_point,
+            'system_prefix': None,
+            'focal_length': None,
+            'baseline': None,
+            'principal_point': None,
             'width': None,
             'height': None
         }
@@ -103,6 +86,35 @@ class OpencvUIController():
 
         self.loaded_images = []
         self.loaded_image_index = 0
+
+    def set_parameters(self,
+                       system_prefix: str,
+                       focal_length: float,
+                       baseline: float,
+                       principal_point: Tuple[int, int]) -> None:
+        """
+        Set the parameters for the UI controller.
+
+        args:
+        No arguments.
+
+        returns:
+        No return.
+        """
+        self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
+        left_ir_dir = os.path.join(self.base_dir, "left_ArUco_images")
+        left_chessboard_dir = os.path.join(self.base_dir, "left_chessboard_images")
+
+        setup_directories(self.base_dir)
+        self.image_index = get_starting_index(left_ir_dir)
+        self.chessboard_image_index = get_starting_index(left_chessboard_dir) - 1
+
+        setup_logging(self.base_dir)
+
+        self.camera_params['system_prefix'] = system_prefix
+        self.camera_params['focal_length'] = focal_length
+        self.camera_params['baseline'] = baseline
+        self.camera_params['principal_point'] = principal_point
 
     def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
         """
