@@ -260,7 +260,7 @@ class TestFileUtils(unittest.TestCase):
 
     @patch('builtins.open', new_callable=mock_open)
     @patch('json.dump')
-    def test_save_setup_info(self, mock_json_dump, mock_open):
+    def test_save_setup_info(self, mock_json_dump, mock_open_file):
         """
         Test saving setup information to a JSON file.
         """
@@ -284,18 +284,26 @@ class TestFileUtils(unittest.TestCase):
             "height": 1080,
             "principal_point": (0, 0)
         }
-        mock_open.assert_called_once_with(os.path.join(base_dir, "setup.json"), 'w', encoding="utf-8")
-        mock_json_dump.assert_called_once_with(setup_info, mock_open(), indent=4)
+        mock_open_file.assert_called_once_with(os.path.join(base_dir, "setup.json"), 'w', encoding="utf-8")
+        mock_json_dump.assert_called_once_with(setup_info, mock_open_file(), indent=4)
 
-    @patch('os.path.exists', return_value=True)
-    @patch('builtins.open', new_callable=mock_open,
-           read_data='{"system_prefix": "test_base_dir", "focal_length": 1.0, "baseline": 1.0, "width": 1920, "height": 1080, "principal_point": [0, 0]}')
-    def test_load_setup_info(self, mock_exists, mock_open):
+    @patch('os.path.exists')
+    def test_load_setup_info(self, mock_exists):
         """
         Test loading setup information from a JSON file.
         """
+        mock_exists.return_value = True
+
+        read_data = (
+            '{"system_prefix": "test_base_dir", "focal_length": 1.0, "baseline": 1.0, '
+            '"width": 1920, "height": 1080, "principal_point": [0, 0]}'
+        )
+
+
         directory = "test_directory"
-        setup_info = load_setup_info(directory)
+        with patch('builtins.open', mock_open(read_data=read_data)):
+            setup_info = load_setup_info(directory)
+
 
         expected_setup_info = {
             "system_prefix": "test_base_dir",
@@ -307,12 +315,15 @@ class TestFileUtils(unittest.TestCase):
         }
         self.assertEqual(setup_info, expected_setup_info)
 
-    @patch('os.path.exists', return_value=False)
+    @patch('os.path.exists')
     def test_load_setup_info_file_not_found(self, mock_exists):
         """
         Test loading setup information when the file is not found.
         """
+        mock_exists.return_value = False
+
         directory = "test_directory"
+
         setup_info = load_setup_info(directory)
         self.assertIsNone(setup_info)
 

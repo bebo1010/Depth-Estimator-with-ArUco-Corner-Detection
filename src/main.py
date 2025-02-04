@@ -4,6 +4,7 @@ Main function to start the application with available camera systems.
 
 if __name__ == "__main__":
     import logging
+    import sys  # Add import for sys module
 
     import pyrealsense2 as rs
     from .ui_objects import OpencvUIController
@@ -11,7 +12,21 @@ if __name__ == "__main__":
 
     logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
 
-    def start_ui_with_camera_system(controller: OpencvUIController, camera_system, system_prefix, focal_length, baseline, principal_point):
+    def start_ui_with_camera_system(controller: OpencvUIController,
+                                    camera_system, system_prefix,
+                                    focal_length, baseline,
+                                    principal_point):
+        """
+        Start the UI with the specified camera system and parameters.
+
+        Args:
+            controller (OpencvUIController): The UI controller to manage the UI.
+            camera_system: The camera system to be used.
+            system_prefix (str): The prefix for the camera system.
+            focal_length (float): The focal length of the camera system in pixels.
+            baseline (float): The baseline distance between cameras in mm.
+            principal_point (tuple): The principal point of the camera system in pixels.
+        """
         logging.disable(logging.NOTSET)  # Re-enable logging after tests
 
         controller.set_parameters(system_prefix, focal_length, baseline, principal_point)
@@ -37,8 +52,10 @@ if __name__ == "__main__":
             camera2 = RealsenseCameraSystem(WIDTH, HEIGHT, connected_devices[1].get_info(rs.camera_info.serial_number))
             cameras = DualRealsenseSystem(camera1, camera2)
             start_ui_with_camera_system(ui_controller, cameras, "Realsense", FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
-            exit()
-    except Exception as e:
+            sys.exit()  # Use sys.exit() instead of exit()
+    except rs.error as e:
+        pass
+    except IndexError as e:
         pass
 
     # Try to detect single Realsense camera
@@ -53,8 +70,10 @@ if __name__ == "__main__":
 
             cameras = RealsenseCameraSystem(width=WIDTH, height=HEIGHT)
             start_ui_with_camera_system(ui_controller, cameras, "Realsense", FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
-            exit()
-    except Exception as e:
+            sys.exit()  # Use sys.exit() instead of exit()
+    except rs.error as e:
+        pass
+    except IndexError as e:
         pass
 
     # Try to detect FLIR cameras
@@ -71,8 +90,8 @@ if __name__ == "__main__":
         camera2 = FlirCameraSystem(CONFIG, SN2)
         cameras = DualFlirSystem(camera1, camera2)
         start_ui_with_camera_system(ui_controller, cameras, "GH3", FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
-        exit()
-    except Exception as e:
+        sys.exit()  # Use sys.exit() instead of exit()
+    except ValueError as e:
         pass
 
     # If no cameras are detected, run the loading functionality
