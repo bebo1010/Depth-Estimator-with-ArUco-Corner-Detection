@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 import logging
 from typing import Tuple, Optional
+import json
 
 import cv2
 import numpy as np
@@ -107,6 +108,7 @@ class OpencvUIController():
         No return.
         """
         self.camera_system = camera_system
+        self._save_setup_info()
 
     def start(self) -> None:
         """
@@ -685,28 +687,30 @@ class OpencvUIController():
         cv2.resizeWindow("Combined View (2x2)", *self.window_size)
         cv2.setMouseCallback("Combined View (2x2)", _mouse_callback)
 
-    def _update_window_title(self) -> None:
+    def _update_window_title(self, setup_name: str = "") -> None:
         """
         Update the window title with the current detector name if epipolar lines are shown.
         """
+        title = "Combined View (2x2)"
+        if setup_name:
+            title += f" - {setup_name}"
+
         if self.display_option['calibration_mode']:
-            cv2.setWindowTitle("Combined View (2x2)",
-                               f"Combined View (2x2) - Calibration Mode - Images Saved: {self.chessboard_image_index}")
+            title += f" - Calibration Mode - Images Saved: {self.chessboard_image_index}"
 
         elif self.display_option['epipolar_lines']:
             detector_name = self.epipolar_detector.detectors[self.epipolar_detector.detector_index][0]
-            cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Detector: {detector_name}")
+            title += f" - Detector: {detector_name}"
 
         elif self.display_option['freeze_mode']:
-            cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2) - Freeze Mode")
+            title += " - Freeze Mode"
 
         elif self.display_option['image_mode']:
             total_images = len(self.loaded_images)
             current_index = self.loaded_image_index + 1
-            cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Image {current_index}/{total_images}")
+            title += f" - Image {current_index}/{total_images}"
 
-        else:
-            cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2)")
+        cv2.setWindowTitle("Combined View (2x2)", title)
 
     def _load_images(self) -> bool:
         """
@@ -720,6 +724,10 @@ class OpencvUIController():
 
         if not selected_dir:
             QMessageBox.critical(None, "Error", "No directory selected.")
+            return False
+
+        if not self._load_setup_info(selected_dir):
+            QMessageBox.critical(None, "Error", "Failed to load setup information.")
             return False
 
         loaded_images, error = load_images_from_directory(selected_dir)
@@ -763,3 +771,50 @@ class OpencvUIController():
                                       matching_ids_result, matching_corners_left, matching_corners_right,
                                       left_depth_image, right_depth_image)
         self._update_window_title()
+
+    def _save_setup_info(self) -> None:
+        """
+        Save the setup information to a JSON file.
+
+        Returns:
+        No return.
+        """
+        setup_info = {
+            "system_prefix": self.base_dir.split("_")[0].split("\\")[-1],
+            "focal_length": self.camera_params['focal_length'],
+            "baseline": self.camera_params['baseline'],
+            "width": self.camera_system.get_width(),
+            "height": self.camera_system.get_height(),
+            "principal_point": self.camera_params['principal_point']
+        }
+        setup_path = os.path.join(self.base_dir, "setup.json")
+        with open(setup_path, 'w', encoding="utf-8") as f:
+            json.dump(setup_info, f, indent=4)
+
+    def _load_setup_info(self, directory: str) -> bool:
+        """
+        Load the setup information from a JSON file.
+
+        Args:
+            directory (str): The directory to load the setup information from.
+
+        Returns:
+            bool: True if the setup information was loaded successfully, False otherwise.
+        """
+        setup_path = os.path.join(directory, "setup.json")
+        if not os.path.exists(setup_path):
+            logging.warning("Setup file not found.")
+            return False
+
+        with open(setup_path, 'r', encoding="utf-8") as f:
+            setup_info = json.load(f)
+
+        self.camera_params = {
+            'focal_length': setup_info['focal_length'],
+            'baseline': setup_info['baseline'],
+            'principal_point': tuple(setup_info['principal_point'])
+        }
+        self.base_dir = directory
+        self._update_window_title(setup_info['system_prefix'])
+
+        return True
