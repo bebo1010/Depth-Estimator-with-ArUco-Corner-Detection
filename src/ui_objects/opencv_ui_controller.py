@@ -281,31 +281,22 @@ class OpencvUIController():
             27: self._exit_or_switch_mode,  # ESC key
             ord('s'): lambda: self._save_images(left_gray_image, right_gray_image,
                                                 first_depth_image, second_depth_image),
-            ord('S'): lambda: self._save_images(left_gray_image, right_gray_image,
-                                                first_depth_image, second_depth_image),
             ord('h'): lambda: self._toggle_option('horizontal_lines'),
-            ord('H'): lambda: self._toggle_option('horizontal_lines'),
             ord('v'): lambda: self._toggle_option('vertical_lines'),
-            ord('V'): lambda: self._toggle_option('vertical_lines'),
             ord('e'): lambda: self._toggle_option('epipolar_lines'),
-            ord('E'): lambda: self._toggle_option('epipolar_lines'),
             ord('n'): lambda: self._navigate_images('next'),
-            ord('N'): lambda: self._navigate_images('next'),
             ord('p'): lambda: self._navigate_images('previous'),
-            ord('P'): lambda: self._navigate_images('previous'),
             ord('c'): self._toggle_calibration_mode,
-            ord('C'): self._toggle_calibration_mode,
             ord('f'): self._toggle_freeze_mode,
-            ord('F'): self._toggle_freeze_mode,
             ord('a'): lambda: self._toggle_option('display_aruco'),
-            ord('A'): lambda: self._toggle_option('display_aruco'),
             ord('l'): self._load_images,
-            ord('L'): self._load_images,
         }
 
         # Execute the corresponding action if the key is in the dictionary
-        if key in actions:
+        if key in actions: # lower case keys
             return actions[key]()
+        if key + 32 in actions: # upper case keys
+            return actions[key + 32]()
 
         return False
 
