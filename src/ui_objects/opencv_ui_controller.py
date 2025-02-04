@@ -127,7 +127,7 @@ class OpencvUIController():
         while True:
             self._update_window_title()
 
-            if not self.display_option['image_mode']:
+            if self.camera_system and not self.display_option['image_mode']:
                 if not self.display_option['freeze_mode']:
                     success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
                     _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
@@ -410,6 +410,9 @@ class OpencvUIController():
         Returns:
             bool: Always returns False.
         """
+        if not self.camera_system:
+            logging.warning("Calibration mode cannot be activated without a camera system.")
+            return False
 
         self.display_option['calibration_mode'] = not self.display_option['calibration_mode']
         if self.display_option['calibration_mode']:
@@ -584,8 +587,8 @@ class OpencvUIController():
         # Calculate mouse hover info
         mouse_x, mouse_y = self.mouse_coords['x'], self.mouse_coords['y']
         if first_depth_image is not None:
-            scaled_x = int(mouse_x * (self.camera_system.get_width() / (self.matrix_view_size[0] // 2)))
-            scaled_y = int(mouse_y * (self.camera_system.get_height() / (self.matrix_view_size[1] // 2)))
+            scaled_x = int(mouse_x * (left_gray_image.shape[1] / (self.matrix_view_size[0] // 2)))
+            scaled_y = int(mouse_y * (left_gray_image.shape[0] / (self.matrix_view_size[1] // 2)))
 
             depth_value = first_depth_image[scaled_y, scaled_x]
 
