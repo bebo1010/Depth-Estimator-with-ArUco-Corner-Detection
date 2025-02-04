@@ -4,8 +4,9 @@ Unit tests for the file_utils module.
 
 import os
 import logging
+import json
 
-from unittest.mock import patch, mock_open, call
+from unittest.mock import patch, mock_open, call, MagicMock
 import unittest
 import coverage
 
@@ -13,7 +14,7 @@ import yaml
 import numpy as np
 
 from src.utils import get_starting_index, parse_yaml_config, setup_directories, setup_logging
-from src.utils.file_utils import save_images, load_images_from_directory
+from src.utils.file_utils import save_images, load_images_from_directory, save_setup_info, load_setup_info
 
 class TestFileUtils(unittest.TestCase):
     """
@@ -257,6 +258,64 @@ class TestFileUtils(unittest.TestCase):
             os.path.join("test_directory", "right_ArUco_images", "right_image1.png"),
             None, None
         ))
+
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('json.dump')
+    def test_save_setup_info(self, mock_json_dump, mock_open):
+        """
+        Test saving setup information to a JSON file.
+        """
+        base_dir = "test_base_dir"
+        camera_params = {
+            'system_prefix': 'test_base_dir',
+            'focal_length': 1.0,
+            'baseline': 1.0,
+            'principal_point': (0, 0),
+            'width': 1920,
+            'height': 1080
+        }
+
+        save_setup_info(base_dir, camera_params)
+
+        setup_info = {
+            "system_prefix": "test_base_dir",
+            "focal_length": 1.0,
+            "baseline": 1.0,
+            "width": 1920,
+            "height": 1080,
+            "principal_point": (0, 0)
+        }
+        mock_open.assert_called_once_with(os.path.join(base_dir, "setup.json"), 'w', encoding="utf-8")
+        mock_json_dump.assert_called_once_with(setup_info, mock_open(), indent=4)
+
+    @patch('os.path.exists', return_value=True)
+    @patch('builtins.open', new_callable=mock_open,
+           read_data='{"system_prefix": "test_base_dir", "focal_length": 1.0, "baseline": 1.0, "width": 1920, "height": 1080, "principal_point": [0, 0]}')
+    def test_load_setup_info(self, mock_exists, mock_open):
+        """
+        Test loading setup information from a JSON file.
+        """
+        directory = "test_directory"
+        setup_info = load_setup_info(directory)
+
+        expected_setup_info = {
+            "system_prefix": "test_base_dir",
+            "focal_length": 1.0,
+            "baseline": 1.0,
+            "width": 1920,
+            "height": 1080,
+            "principal_point": [0, 0]
+        }
+        self.assertEqual(setup_info, expected_setup_info)
+
+    @patch('os.path.exists', return_value=False)
+    def test_load_setup_info_file_not_found(self, mock_exists):
+        """
+        Test loading setup information when the file is not found.
+        """
+        directory = "test_directory"
+        setup_info = load_setup_info(directory)
+        self.assertIsNone(setup_info)
 
 if __name__ == '__main__':
     cov = coverage.Coverage()
