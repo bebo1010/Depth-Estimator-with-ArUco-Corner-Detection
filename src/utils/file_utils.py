@@ -5,6 +5,7 @@ such as determining the starting index for image files in a directory.
 
 import os
 import logging
+import json
 from typing import Optional, Tuple
 
 import yaml
@@ -196,3 +197,45 @@ def load_images_from_directory(selected_dir: str) -> Tuple[Optional[list], Optio
 
     loaded_images = list(zip(left_images, right_images, left_depth_images, right_depth_images))
     return loaded_images, None
+
+def save_setup_info(base_dir: str, camera_params: dict) -> None:
+    """
+    Save the setup information to a JSON file.
+
+    Args:
+        base_dir (str): The base directory to save the setup information.
+        camera_params (dict): The camera parameters.
+    Returns:
+        None.
+    """
+    setup_info = {
+        "system_prefix": camera_params['system_prefix'],
+        "focal_length": camera_params['focal_length'],
+        "baseline": camera_params['baseline'],
+        "width": camera_params['width'],
+        "height": camera_params['height'],
+        "principal_point": camera_params['principal_point']
+    }
+    setup_path = os.path.join(base_dir, "setup.json")
+    with open(setup_path, 'w', encoding="utf-8") as f:
+        json.dump(setup_info, f, indent=4)
+
+def load_setup_info(directory: str) -> Optional[dict]:
+    """
+    Load the setup information from a JSON file.
+
+    Args:
+        directory (str): The directory to load the setup information from.
+
+    Returns:
+        Optional[dict]: The setup information if loaded successfully, otherwise None.
+    """
+    setup_path = os.path.join(directory, "setup.json")
+    if not os.path.exists(setup_path):
+        logging.warning("Setup file not found.")
+        return None
+
+    with open(setup_path, 'r', encoding="utf-8") as f:
+        setup_info = json.load(f)
+
+    return setup_info

@@ -14,6 +14,7 @@ from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCa
 from src.camera_objects import TwoCamerasSystem
 from src.utils import get_starting_index, setup_directories, setup_logging, save_images, draw_lines, \
     apply_colormap, draw_aruco_rectangle, load_images_from_directory
+from src.utils.file_utils import save_setup_info, load_setup_info
 
 class OpencvUIController():
     """
@@ -40,30 +41,13 @@ class OpencvUIController():
         _setup_window() -> None
         _update_window_title(bool) -> None
     """
-    def __init__(self,
-                 system_prefix: str,
-                 focal_length: float,
-                 baseline: float,
-                 principal_point: Tuple[int, int]) -> None:
+    def __init__(self) -> None:
         """
-        Initialize UI controller.
-
-        args:
-        No arguments.
-
-        returns:
-        No return.
+        Initialize UI controller without parameters.
         """
-        self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
-        left_ir_dir = os.path.join(self.base_dir, "left_ArUco_images")
-        left_chessboard_dir = os.path.join(self.base_dir, "left_chessboard_images")
-
-        setup_directories(self.base_dir)
-        self.image_index = get_starting_index(left_ir_dir)
-        self.chessboard_image_index = get_starting_index(left_chessboard_dir) - 1
-
-        setup_logging(self.base_dir)
-
+        self.base_dir = None
+        self.image_index = 0
+        self.chessboard_image_index = 0
         self.mouse_coords = {'x': 0, 'y': 0}
         self.window_size = (2000, 960)
         self.matrix_view_size = (1280, 960)
@@ -72,7 +56,14 @@ class OpencvUIController():
         self.camera_system = None
         self.aruco_detector = ArUcoDetector()
 
-        self.camera_params = {'focal_length': focal_length, 'baseline': baseline, 'principal_point': principal_point}
+        self.camera_params = {
+            'system_prefix': None,
+            'focal_length': None,
+            'baseline': None,
+            'principal_point': None,
+            'width': None,
+            'height': None
+        }
 
         self.display_option = {
             'image_mode': False,
@@ -96,6 +87,35 @@ class OpencvUIController():
         self.loaded_images = []
         self.loaded_image_index = 0
 
+    def set_parameters(self,
+                       system_prefix: str,
+                       focal_length: float,
+                       baseline: float,
+                       principal_point: Tuple[int, int]) -> None:
+        """
+        Set the parameters for the UI controller.
+
+        args:
+        No arguments.
+
+        returns:
+        No return.
+        """
+        self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
+        left_ir_dir = os.path.join(self.base_dir, "left_ArUco_images")
+        left_chessboard_dir = os.path.join(self.base_dir, "left_chessboard_images")
+
+        setup_directories(self.base_dir)
+        self.image_index = get_starting_index(left_ir_dir)
+        self.chessboard_image_index = get_starting_index(left_chessboard_dir) - 1
+
+        setup_logging(self.base_dir)
+
+        self.camera_params['system_prefix'] = system_prefix
+        self.camera_params['focal_length'] = focal_length
+        self.camera_params['baseline'] = baseline
+        self.camera_params['principal_point'] = principal_point
+
     def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
         """
         Set the camera system for the application.
@@ -107,6 +127,9 @@ class OpencvUIController():
         No return.
         """
         self.camera_system = camera_system
+        self.camera_params['width'] = self.camera_system.get_width()
+        self.camera_params['height'] = self.camera_system.get_height()
+        save_setup_info(self.base_dir, self.camera_params)
 
     def start(self) -> None:
         """
@@ -127,7 +150,7 @@ class OpencvUIController():
         while True:
             self._update_window_title()
 
-            if not self.display_option['image_mode']:
+            if self.camera_system and not self.display_option['image_mode']:
                 if not self.display_option['freeze_mode']:
                     success, left_gray_image, right_gray_image = self.camera_system.get_grayscale_images()
                     _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
@@ -181,7 +204,7 @@ class OpencvUIController():
             None.
         """
         if self.image_points['left'] and self.image_points['right']:
-            image_size = (self.camera_system.get_width(), self.camera_system.get_height())
+            image_size = (self.camera_params['width'], self.camera_params['height'])
             success = self.chessboard_calibrator.calibrate_stereo_camera(self.image_points['left'],
                                                                          self.image_points['right'],
                                                                          image_size)
@@ -281,31 +304,22 @@ class OpencvUIController():
             27: self._exit_or_switch_mode,  # ESC key
             ord('s'): lambda: self._save_images(left_gray_image, right_gray_image,
                                                 first_depth_image, second_depth_image),
-            ord('S'): lambda: self._save_images(left_gray_image, right_gray_image,
-                                                first_depth_image, second_depth_image),
             ord('h'): lambda: self._toggle_option('horizontal_lines'),
-            ord('H'): lambda: self._toggle_option('horizontal_lines'),
             ord('v'): lambda: self._toggle_option('vertical_lines'),
-            ord('V'): lambda: self._toggle_option('vertical_lines'),
             ord('e'): lambda: self._toggle_option('epipolar_lines'),
-            ord('E'): lambda: self._toggle_option('epipolar_lines'),
             ord('n'): lambda: self._navigate_images('next'),
-            ord('N'): lambda: self._navigate_images('next'),
             ord('p'): lambda: self._navigate_images('previous'),
-            ord('P'): lambda: self._navigate_images('previous'),
             ord('c'): self._toggle_calibration_mode,
-            ord('C'): self._toggle_calibration_mode,
             ord('f'): self._toggle_freeze_mode,
-            ord('F'): self._toggle_freeze_mode,
             ord('a'): lambda: self._toggle_option('display_aruco'),
-            ord('A'): lambda: self._toggle_option('display_aruco'),
             ord('l'): self._load_images,
-            ord('L'): self._load_images,
         }
 
         # Execute the corresponding action if the key is in the dictionary
-        if key in actions:
+        if key in actions: # lower case keys
             return actions[key]()
+        if key + 32 in actions: # upper case keys
+            return actions[key + 32]()
 
         return False
 
@@ -360,7 +374,9 @@ class OpencvUIController():
         and closes any OpenCV windows that are open.
         """
         logging.info("Program terminated by user.")
-        self.camera_system.release()
+        if self.camera_system:
+            logging.info("Releasing camera system.")
+            self.camera_system.release()
         cv2.destroyAllWindows()
 
     def _save_images(self, left_gray_image, right_gray_image, first_depth_image, second_depth_image) -> bool:
@@ -376,6 +392,9 @@ class OpencvUIController():
         Returns:
             bool: Always returns False.
         """
+        if self.display_option['image_mode']:
+            logging.warning("Cannot save images while in image mode.")
+            return False
 
         if self.display_option['calibration_mode']:
             self._save_chessboard_images(left_gray_image, right_gray_image)
@@ -410,6 +429,9 @@ class OpencvUIController():
         Returns:
             bool: Always returns False.
         """
+        if not self.camera_system:
+            logging.warning("Calibration mode cannot be activated without a camera system.")
+            return False
 
         self.display_option['calibration_mode'] = not self.display_option['calibration_mode']
         if self.display_option['calibration_mode']:
@@ -451,9 +473,12 @@ class OpencvUIController():
 
         # Downsample the images by the scale factor
         left_small = cv2.resize(left_gray_image,
-                                (left_gray_image.shape[1] // scale_factor, left_gray_image.shape[0] // scale_factor))
+                                (self.camera_params['width'] // scale_factor,
+                                 self.camera_params['height'] // scale_factor))
+
         right_small = cv2.resize(right_gray_image,
-                                 (right_gray_image.shape[1] // scale_factor, right_gray_image.shape[0] // scale_factor))
+                                 (self.camera_params['width'] // scale_factor,
+                                  self.camera_params['height'] // scale_factor))
 
         # Detect chessboard corners on the downsampled images
         ret_left, corners_left_small = self.chessboard_calibrator.detect_chessboard_corners(left_small)
@@ -584,8 +609,8 @@ class OpencvUIController():
         # Calculate mouse hover info
         mouse_x, mouse_y = self.mouse_coords['x'], self.mouse_coords['y']
         if first_depth_image is not None:
-            scaled_x = int(mouse_x * (self.camera_system.get_width() / (self.matrix_view_size[0] // 2)))
-            scaled_y = int(mouse_y * (self.camera_system.get_height() / (self.matrix_view_size[1] // 2)))
+            scaled_x = int(mouse_x * (self.camera_params['width'] / (self.matrix_view_size[0] // 2)))
+            scaled_y = int(mouse_y * (self.camera_params['height'] / (self.matrix_view_size[1] // 2)))
 
             depth_value = first_depth_image[scaled_y, scaled_x]
 
@@ -633,8 +658,8 @@ class OpencvUIController():
         realsense_depth_mm = np.zeros_like(estimated_depth_mm)
         if depth_image is not None:
             for j, (cx, cy) in enumerate(matching_corners_left):
-                realsense_depth_mm[j] = depth_image[min(max(int(cy), 0), depth_image.shape[0] - 1),
-                                               min(max(int(cx), 0), depth_image.shape[1] - 1)]
+                realsense_depth_mm[j] = depth_image[min(max(int(cy), 0), self.camera_params['height'] - 1),
+                                               min(max(int(cx), 0), self.camera_params['width'] - 1)]
 
         return disparities, mean_disparity, variance_disparity, estimated_depth_mm, realsense_depth_mm
 
@@ -686,28 +711,30 @@ class OpencvUIController():
         cv2.resizeWindow("Combined View (2x2)", *self.window_size)
         cv2.setMouseCallback("Combined View (2x2)", _mouse_callback)
 
-    def _update_window_title(self) -> None:
+    def _update_window_title(self, setup_name: str = "") -> None:
         """
         Update the window title with the current detector name if epipolar lines are shown.
         """
+        title = "Combined View (2x2)"
+        if setup_name:
+            title += f" - {setup_name}"
+
         if self.display_option['calibration_mode']:
-            cv2.setWindowTitle("Combined View (2x2)",
-                               f"Combined View (2x2) - Calibration Mode - Images Saved: {self.chessboard_image_index}")
+            title += f" - Calibration Mode - Images Saved: {self.chessboard_image_index}"
 
         elif self.display_option['epipolar_lines']:
             detector_name = self.epipolar_detector.detectors[self.epipolar_detector.detector_index][0]
-            cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Detector: {detector_name}")
+            title += f" - Detector: {detector_name}"
 
         elif self.display_option['freeze_mode']:
-            cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2) - Freeze Mode")
+            title += " - Freeze Mode"
 
         elif self.display_option['image_mode']:
             total_images = len(self.loaded_images)
             current_index = self.loaded_image_index + 1
-            cv2.setWindowTitle("Combined View (2x2)", f"Combined View (2x2) - Image {current_index}/{total_images}")
+            title += f" - Image {current_index}/{total_images}"
 
-        else:
-            cv2.setWindowTitle("Combined View (2x2)", "Combined View (2x2)")
+        cv2.setWindowTitle("Combined View (2x2)", title)
 
     def _load_images(self) -> bool:
         """
@@ -722,6 +749,22 @@ class OpencvUIController():
         if not selected_dir:
             QMessageBox.critical(None, "Error", "No directory selected.")
             return False
+
+        setup_info = load_setup_info(selected_dir)
+        if not setup_info:
+            QMessageBox.critical(None, "Error", "Failed to load setup information.")
+            return False
+
+        self.camera_params = {
+            'system_prefix': setup_info['system_prefix'],
+            'focal_length': setup_info['focal_length'],
+            'baseline': setup_info['baseline'],
+            'principal_point': tuple(setup_info['principal_point']),
+            'width': setup_info['width'],
+            'height': setup_info['height']
+        }
+        self.base_dir = selected_dir
+        self._update_window_title(self.camera_params['system_prefix'])
 
         loaded_images, error = load_images_from_directory(selected_dir)
         if error:
@@ -763,4 +806,4 @@ class OpencvUIController():
         self._process_and_draw_images(left_image, right_image,
                                       matching_ids_result, matching_corners_left, matching_corners_right,
                                       left_depth_image, right_depth_image)
-        self._update_window_title()
+        self._update_window_title(self.camera_params['system_prefix'])
