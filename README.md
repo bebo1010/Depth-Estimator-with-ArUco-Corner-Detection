@@ -67,6 +67,7 @@
     - [ ] Load back the parameters and rectify the images
     - [ ] (Optional) Show reprojection error per image
 - [x] Load back the saved images
+    - [x] Include camera parameters like focal length, baseline, etc
 - [x] Unit Tests
     - [x] ArUco detector
     - [x] Camera systems (not possible for FLIR cameras)
