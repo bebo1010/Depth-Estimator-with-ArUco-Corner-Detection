@@ -360,7 +360,9 @@ class OpencvUIController():
         and closes any OpenCV windows that are open.
         """
         logging.info("Program terminated by user.")
-        self.camera_system.release()
+        if self.camera_system:
+            logging.info("Releasing camera system.")
+            self.camera_system.release()
         cv2.destroyAllWindows()
 
     def _save_images(self, left_gray_image, right_gray_image, first_depth_image, second_depth_image) -> bool:
@@ -376,6 +378,9 @@ class OpencvUIController():
         Returns:
             bool: Always returns False.
         """
+        if self.display_option['image_mode']:
+            logging.warning("Cannot save images while in image mode.")
+            return False
 
         if self.display_option['calibration_mode']:
             self._save_chessboard_images(left_gray_image, right_gray_image)
