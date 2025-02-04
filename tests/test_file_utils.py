@@ -4,9 +4,8 @@ Unit tests for the file_utils module.
 
 import os
 import logging
-import json
 
-from unittest.mock import patch, mock_open, call, MagicMock
+from unittest.mock import patch, mock_open, call
 import unittest
 import coverage
 
