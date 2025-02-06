@@ -10,6 +10,10 @@ Functions:
 
     draw_aruco_rectangle(image: np.ndarray, corners: np.ndarray, marker_id: int) -> None:
         Draw a rectangle from the 4 corner points with red color and display the marker ID.
+
+    update_aruco_info(marker_id: int, estimated_3d_coords: list, realsense_3d_coords: list,
+                      mean_depth_estimated: float, mean_depth_realsense: float) -> str:
+        Update ArUco marker information.
 """
 
 from typing import Optional
@@ -70,3 +74,47 @@ def draw_aruco_rectangle(image: np.ndarray, corners: np.ndarray, marker_id: int)
     # Add the marker ID at the top-left corner of the rectangle
     top_left_corner = tuple((corners[0][0], corners[0][1] - 10))
     cv2.putText(image, f"ID: {marker_id}", top_left_corner, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+def update_aruco_info(marker_id,
+                      estimated_3d_coords, realsense_3d_coords,
+                      mean_depth_estimated, mean_depth_realsense):
+    """
+    Update ArUco marker information.
+
+    Args:
+        marker_id (int): ID of the ArUco marker.
+        estimated_3d_coords (list): Estimated 3D coordinates.
+        realsense_3d_coords (list): RealSense 3D coordinates.
+        mean_depth_estimated (float): Mean depth estimated.
+        mean_depth_realsense (float): Mean depth from RealSense.
+
+    Returns:
+        str: Formatted information string.
+    """
+    info = f"ArUco ID {marker_id}:\n"
+    info += f"Estimated: ({estimated_3d_coords[0][0]:7.1f}, {estimated_3d_coords[0][1]:7.1f}, " \
+            f"{estimated_3d_coords[0][2]:7.1f}), ({estimated_3d_coords[1][0]:7.1f}, " \
+            f"{estimated_3d_coords[1][1]:7.1f}, {estimated_3d_coords[1][2]:7.1f})\n"
+    info += f"            ({estimated_3d_coords[2][0]:7.1f}, {estimated_3d_coords[2][1]:7.1f}, " \
+            f"{estimated_3d_coords[2][2]:7.1f}), ({estimated_3d_coords[3][0]:7.1f}, " \
+            f"{estimated_3d_coords[3][1]:7.1f}, {estimated_3d_coords[3][2]:7.1f})\n"
+    length_x_estimated = np.abs(estimated_3d_coords[0][0] - estimated_3d_coords[1][0])
+    length_y_estimated = np.abs(estimated_3d_coords[0][1] - estimated_3d_coords[2][1])
+    info += f"Length X (Estimated): {length_x_estimated:7.2f}, " \
+            f"Length Y (Estimated): {length_y_estimated:7.2f}\n"
+    info += f"Mean Depth (Estimated): {mean_depth_estimated:7.2f}\n"
+
+    if realsense_3d_coords is not None:
+        info += f"RealSense: ({realsense_3d_coords[0][0]:7.1f}, {realsense_3d_coords[0][1]:7.1f}, " \
+                f"{realsense_3d_coords[0][2]:7.1f}), ({realsense_3d_coords[1][0]:7.1f}, " \
+                f"{realsense_3d_coords[1][1]:7.1f}, {realsense_3d_coords[1][2]:7.1f})\n"
+        info += f"            ({realsense_3d_coords[2][0]:7.1f}, {realsense_3d_coords[2][1]:7.1f}, " \
+                f"{realsense_3d_coords[2][2]:7.1f}), ({realsense_3d_coords[3][0]:7.1f}, " \
+                f"{realsense_3d_coords[3][1]:7.1f}, {realsense_3d_coords[3][2]:7.1f})\n"
+        length_x_realsense = np.abs(realsense_3d_coords[0][0] - realsense_3d_coords[1][0])
+        length_y_realsense = np.abs(realsense_3d_coords[0][1] - realsense_3d_coords[2][1])
+        info += f"Length X (RealSense): {length_x_realsense:7.2f}, " \
+                f"Length Y (RealSense): {length_y_realsense:7.2f}\n"
+        info += f"Mean Depth (RealSense): {mean_depth_realsense:7.2f}\n\n"
+
+    return info
