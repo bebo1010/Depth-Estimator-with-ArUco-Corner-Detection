@@ -41,6 +41,7 @@ class EpipolarLineDetector:
 
         self.fundamental_matrix = None
         self.fundamental_matrix_file = None
+        self.is_fundamental_matrix_good = False
 
         logging.info("EpipolarLineDetector initialized with detector: %s", self.detectors[self.detector_index][0])
 
@@ -97,9 +98,11 @@ class EpipolarLineDetector:
             with open(self.fundamental_matrix_file, 'r', encoding="utf-8") as json_file:
                 data = json.load(json_file)
                 self.fundamental_matrix = np.array(data["fundamental_matrix"])
+                self.is_fundamental_matrix_good = True
                 logging.info("Loaded fundamental matrix from file: %s", self.fundamental_matrix_file)
         else:
             self.fundamental_matrix = None
+            self.is_fundamental_matrix_good = False
             logging.info("No existing fundamental matrix file found.")
 
     def draw_epilines_from_scene(self,
@@ -147,7 +150,7 @@ class EpipolarLineDetector:
         points_left = np.array([points_left[m.queryIdx] for m in good_matches], dtype=np.float32)
         points_right = np.array([points_right[m.trainIdx] for m in good_matches], dtype=np.float32)
 
-        if self.fundamental_matrix is None:
+        if not self.is_fundamental_matrix_good:
             logging.info("Computing fundamental matrix.")
             self.fundamental_matrix, mask = cv2.findFundamentalMat(points_left, points_right,
                                    method=cv2.FM_RANSAC,
@@ -163,6 +166,7 @@ class EpipolarLineDetector:
             epilines_right = cv2.computeCorrespondEpilines(points_left, 1, self.fundamental_matrix).reshape(-1, 3)
 
             if self._is_good_fundamental_matrix(epilines_left):
+                self.is_fundamental_matrix_good = True
                 self._save_fundamental_matrix()
         else:
             logging.info("Using existing fundamental matrix.")
@@ -211,7 +215,7 @@ class EpipolarLineDetector:
         points_left = np.asarray(corners_left, dtype=np.float32).reshape(-1, 2)
         points_right = np.asarray(corners_right, dtype=np.float32).reshape(-1, 2)
 
-        if self.fundamental_matrix is None:
+        if not self.is_fundamental_matrix_good:
             return left_image, right_image
 
         points_left = corners_left.reshape(-1, 2)
@@ -244,7 +248,7 @@ class EpipolarLineDetector:
             True if more than 50% of the epipolar lines are horizontal, False otherwise.
         """
         # Count the number of horizontal lines by checking if the slope -a/b is near 0
-        horizontal_lines = sum(abs(-line[0] / line[1]) < 0.05 for line in epilines)
+        horizontal_lines = sum(abs(-line[0] / line[1]) < 0.005 for line in epilines)
 
         # Check if more than 50% of the lines are horizontal
         return horizontal_lines > 0.5 * len(epilines)
