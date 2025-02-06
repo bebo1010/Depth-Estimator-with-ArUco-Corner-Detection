@@ -4,6 +4,8 @@ Description: This module contains the EpipolarLineDetector class for detecting e
 """
 from typing import Tuple
 import logging
+import os
+import json
 
 import cv2
 import numpy as np
@@ -36,7 +38,10 @@ class EpipolarLineDetector:
             # ("KAZE", cv2.KAZE_create())
         ]
         self.set_feature_detector(self.detectors[self.detector_index][1])
+
         self.fundamental_matrix = None
+        self.fundamental_matrix_file = None
+
         logging.info("EpipolarLineDetector initialized with detector: %s", self.detectors[self.detector_index][0])
 
     def set_feature_detector(self, detector: cv2.Feature2D) -> None:
@@ -73,6 +78,29 @@ class EpipolarLineDetector:
             self.detector_index = (self.detector_index - 1) % len(self.detectors)
         self.set_feature_detector(self.detectors[self.detector_index][1])
         logging.info("Switched feature detector to: %s", self.detectors[self.detector_index][0])
+
+    def set_save_directory(self, directory: str) -> None:
+        """
+        Sets the directory for saving the fundamental matrix and updates the file path.
+        Attempts to load the fundamental matrix from the specified directory.
+
+        Parameters
+        ----------
+        directory : str
+            The directory where the fundamental matrix will be saved.
+        """
+        self.fundamental_matrix_file = os.path.join(directory, "fundamental_matrix.json")
+        logging.info("Save directory set to: %s", directory)
+
+        # Attempt to load the fundamental matrix from the JSON file
+        if os.path.exists(self.fundamental_matrix_file):
+            with open(self.fundamental_matrix_file, 'r', encoding="utf-8") as json_file:
+                data = json.load(json_file)
+                self.fundamental_matrix = np.array(data["fundamental_matrix"])
+                logging.info("Loaded fundamental matrix from file: %s", self.fundamental_matrix_file)
+        else:
+            self.fundamental_matrix = None
+            logging.info("No existing fundamental matrix file found.")
 
     def draw_epilines_from_scene(self,
                          left_image: np.ndarray,
@@ -119,19 +147,27 @@ class EpipolarLineDetector:
         points_left = np.array([points_left[m.queryIdx] for m in good_matches], dtype=np.float32)
         points_right = np.array([points_right[m.trainIdx] for m in good_matches], dtype=np.float32)
 
-        logging.info("Computing fundamental matrix.")
-        self.fundamental_matrix, mask = cv2.findFundamentalMat(points_left, points_right,
-                               method=cv2.FM_RANSAC,
-                               ransacReprojThreshold=3,
-                               confidence=0.99,
-                               maxIters=100)
+        if self.fundamental_matrix is None:
+            logging.info("Computing fundamental matrix.")
+            self.fundamental_matrix, mask = cv2.findFundamentalMat(points_left, points_right,
+                                   method=cv2.FM_RANSAC,
+                                   ransacReprojThreshold=3,
+                                   confidence=0.99,
+                                   maxIters=100)
 
-        points_left = points_left[mask.ravel() == 1]
-        points_right = points_right[mask.ravel() == 1]
+            points_left = points_left[mask.ravel() == 1]
+            points_right = points_right[mask.ravel() == 1]
 
-        logging.info("Computing epilines.")
-        epilines_left = cv2.computeCorrespondEpilines(points_right, 2, self.fundamental_matrix).reshape(-1, 3)
-        epilines_right = cv2.computeCorrespondEpilines(points_left, 1, self.fundamental_matrix).reshape(-1, 3)
+            logging.info("Computing epilines.")
+            epilines_left = cv2.computeCorrespondEpilines(points_right, 2, self.fundamental_matrix).reshape(-1, 3)
+            epilines_right = cv2.computeCorrespondEpilines(points_left, 1, self.fundamental_matrix).reshape(-1, 3)
+
+            if self._is_good_fundamental_matrix(epilines_left):
+                self._save_fundamental_matrix()
+        else:
+            logging.info("Using existing fundamental matrix.")
+            epilines_left = cv2.computeCorrespondEpilines(points_right, 2, self.fundamental_matrix).reshape(-1, 3)
+            epilines_right = cv2.computeCorrespondEpilines(points_left, 1, self.fundamental_matrix).reshape(-1, 3)
 
         # Limit the number of epipolar lines to 10
         num_lines = min(100, len(epilines_left), len(epilines_right))
@@ -176,11 +212,7 @@ class EpipolarLineDetector:
         points_right = np.asarray(corners_right, dtype=np.float32).reshape(-1, 2)
 
         if self.fundamental_matrix is None:
-            self.fundamental_matrix, _ = cv2.findFundamentalMat(points_left, points_right,
-                                                        method=cv2.FM_RANSAC,
-                                                        ransacReprojThreshold=3,
-                                                        confidence=0.99,
-                                                        maxIters=100)
+            return left_image, right_image
 
         points_left = corners_left.reshape(-1, 2)
         points_right = corners_right.reshape(-1, 2)
@@ -188,11 +220,46 @@ class EpipolarLineDetector:
         epilines_left = cv2.computeCorrespondEpilines(points_right, 2, self.fundamental_matrix).reshape(-1, 3)
         epilines_right = cv2.computeCorrespondEpilines(points_left, 1, self.fundamental_matrix).reshape(-1, 3)
 
+        if self._is_good_fundamental_matrix(epilines_left):
+            self._save_fundamental_matrix()
+
         left_image_with_lines = self._draw_epilines(left_image, epilines_left, points_left)
         right_image_with_lines = self._draw_epilines(right_image, epilines_right, points_right)
 
         logging.info("Epipolar lines computed and drawn on images from corners.")
         return left_image_with_lines, right_image_with_lines
+
+    def _is_good_fundamental_matrix(self, epilines: np.ndarray) -> bool:
+        """
+        Checks if more than 50% of the epipolar lines are horizontal.
+
+        Parameters
+        ----------
+        epilines : numpy.ndarray
+            The epipolar lines to be checked.
+
+        Returns
+        -------
+        bool
+            True if more than 50% of the epipolar lines are horizontal, False otherwise.
+        """
+        # Count the number of horizontal lines by checking if the slope -a/b is near 0
+        horizontal_lines = sum(abs(-line[0] / line[1]) < 0.05 for line in epilines)
+
+        # Check if more than 50% of the lines are horizontal
+        return horizontal_lines > 0.5 * len(epilines)
+
+    def _save_fundamental_matrix(self):
+        """
+        Saves the fundamental matrix to a JSON file with formatted text.
+        """
+        fundamental_matrix_list = self.fundamental_matrix.tolist()
+        fundamental_matrix_dict = {"fundamental_matrix": fundamental_matrix_list}
+
+        with open(self.fundamental_matrix_file, 'w', encoding="utf-8") as json_file:
+            json.dump(fundamental_matrix_dict, json_file, indent=4)
+
+        logging.info("Fundamental matrix saved to JSON file: %s", self.fundamental_matrix_file)
 
     def _draw_epilines(self, image: np.ndarray, epilines: np.ndarray, points: np.ndarray) -> np.ndarray:
         """

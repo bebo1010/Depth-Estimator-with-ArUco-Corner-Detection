@@ -116,6 +116,9 @@ class OpencvUIController():
         self.camera_params['baseline'] = baseline
         self.camera_params['principal_point'] = principal_point
 
+        # Set the save directory for the fundamental matrix
+        self.epipolar_detector.set_save_directory(self.base_dir)
+
     def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
         """
         Set the camera system for the application.
