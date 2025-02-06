@@ -353,8 +353,14 @@ class EpipolarLineDetector:
         """
         logging.info("Drawing epipolar lines on the image.")
         image_with_lines = image.copy()
-        for r, pt in zip(epilines, points):
-            color = tuple(np.random.randint(0, 255, 3).tolist())
+        bright_colors = [
+            (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255),
+            (128, 0, 0), (0, 128, 0), (0, 0, 128), (128, 128, 0), (128, 0, 128), (0, 128, 128),
+            (255, 128, 0), (255, 0, 128), (128, 255, 0), (0, 255, 128), (128, 0, 255), (0, 128, 255)
+        ]
+        num_colors = len(bright_colors)
+        for i, (r, pt) in enumerate(zip(epilines, points)):
+            color = bright_colors[i % num_colors]
             x0, y0 = map(int, [0, -r[2] / r[1]])
             x1, y1 = map(int, [image.shape[1], -(r[2] + r[0] * image.shape[1]) / r[1]])
             image_with_lines = cv2.line(image_with_lines, (x0, y0), (x1, y1), color, 1)
