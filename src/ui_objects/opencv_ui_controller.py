@@ -160,6 +160,12 @@ class OpencvUIController():
                     if not success:
                         continue
 
+                if self.epipolar_detector.homography_ready:
+                    left_gray_image = cv2.warpPerspective(left_gray_image, self.epipolar_detector.homography_left,
+                                                          (left_gray_image.shape[1], left_gray_image.shape[0]))
+                    right_gray_image = cv2.warpPerspective(right_gray_image, self.epipolar_detector.homography_right,
+                                                           (right_gray_image.shape[1], right_gray_image.shape[0]))
+
                 if self.display_option['calibration_mode']:
                     self._process_and_draw_chessboard(left_gray_image, right_gray_image)
                 else:
@@ -569,7 +575,7 @@ class OpencvUIController():
                                             np.mean(realsense_depth_mm) if realsense_depth_mm is not None else None)
 
         if self.display_option['epipolar_lines']:
-            if len(matching_ids_result) > 0 and self.epipolar_detector.fundamental_matrix is not None:
+            if len(matching_ids_result) > 0 and self.epipolar_detector.homography_ready:
                 left_colored, right_colored = self.epipolar_detector.draw_epilines_from_corners(
                     left_colored, right_colored, matching_corners_left, matching_corners_right)
             else:
