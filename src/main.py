@@ -53,7 +53,7 @@ if __name__ == "__main__":
             cameras = DualRealsenseSystem(camera1, camera2)
             start_ui_with_camera_system(ui_controller, cameras, "Realsense", FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
             sys.exit()  # Use sys.exit() instead of exit()
-    except rs.error as e:
+    except SystemExit:
         pass
     except IndexError as e:
         pass
@@ -71,7 +71,7 @@ if __name__ == "__main__":
             cameras = RealsenseCameraSystem(width=WIDTH, height=HEIGHT)
             start_ui_with_camera_system(ui_controller, cameras, "Realsense", FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
             sys.exit()  # Use sys.exit() instead of exit()
-    except rs.error as e:
+    except SystemExit:
         pass
     except IndexError as e:
         pass
@@ -91,6 +91,8 @@ if __name__ == "__main__":
         cameras = DualFlirSystem(camera1, camera2)
         start_ui_with_camera_system(ui_controller, cameras, "GH3", FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
         sys.exit()  # Use sys.exit() instead of exit()
+    except SystemExit:
+        pass
     except ValueError as e:
         pass
 

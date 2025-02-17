@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QApplication, QFileDialog, QMessageBox
 from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCalibrator
 from src.camera_objects import TwoCamerasSystem
 from src.utils import get_starting_index, setup_directories, setup_logging, save_images, draw_lines, \
-    apply_colormap, draw_aruco_rectangle, load_images_from_directory
+    apply_colormap, draw_aruco_rectangle, load_images_from_directory, update_aruco_info
 from src.utils.file_utils import save_setup_info, load_setup_info
 
 class OpencvUIController():
@@ -116,6 +116,9 @@ class OpencvUIController():
         self.camera_params['baseline'] = baseline
         self.camera_params['principal_point'] = principal_point
 
+        # Set the save directory for the fundamental matrix
+        self.epipolar_detector.set_save_directory(self.base_dir)
+
     def set_camera_system(self, camera_system: TwoCamerasSystem) -> None:
         """
         Set the camera system for the application.
@@ -156,6 +159,12 @@ class OpencvUIController():
                     _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
                     if not success:
                         continue
+
+                if self.epipolar_detector.homography_ready:
+                    left_gray_image = cv2.warpPerspective(left_gray_image, self.epipolar_detector.homography_left,
+                                                          (left_gray_image.shape[1], left_gray_image.shape[0]))
+                    right_gray_image = cv2.warpPerspective(right_gray_image, self.epipolar_detector.homography_right,
+                                                           (right_gray_image.shape[1], right_gray_image.shape[0]))
 
                 if self.display_option['calibration_mode']:
                     self._process_and_draw_chessboard(left_gray_image, right_gray_image)
@@ -541,34 +550,6 @@ class OpencvUIController():
                      (y - self.camera_params['principal_point'][1]) * depth / self.camera_params['focal_length'], depth)
                     for x, y, depth in zip(xs, ys, depths)]
 
-        def update_aruco_info(marker_id,
-                              estimated_3d_coords, realsense_3d_coords,
-                              mean_depth_estimated, mean_depth_realsense):
-            info = f"ArUco ID {marker_id}:\n"
-            info += f"Estimated: ({estimated_3d_coords[0][0]:7.1f}, {estimated_3d_coords[0][1]:7.1f}, " \
-                    f"{estimated_3d_coords[0][2]:7.1f}), ({estimated_3d_coords[1][0]:7.1f}, " \
-                    f"{estimated_3d_coords[1][1]:7.1f}, {estimated_3d_coords[1][2]:7.1f})\n"
-            info += f"            ({estimated_3d_coords[2][0]:7.1f}, {estimated_3d_coords[2][1]:7.1f}, " \
-                    f"{estimated_3d_coords[2][2]:7.1f}), ({estimated_3d_coords[3][0]:7.1f}, " \
-                    f"{estimated_3d_coords[3][1]:7.1f}, {estimated_3d_coords[3][2]:7.1f})\n"
-            length_x_estimated = np.abs(estimated_3d_coords[0][0] - estimated_3d_coords[1][0])
-            length_y_estimated = np.abs(estimated_3d_coords[0][1] - estimated_3d_coords[2][1])
-            info += f"Length X (Estimated): {length_x_estimated:7.2f}, " \
-                    f"Length Y (Estimated): {length_y_estimated:7.2f}\n"
-            info += f"Mean Depth (Estimated): {mean_depth_estimated:7.2f}\n"
-            info += f"RealSense: ({realsense_3d_coords[0][0]:7.1f}, {realsense_3d_coords[0][1]:7.1f}, " \
-                    f"{realsense_3d_coords[0][2]:7.1f}), ({realsense_3d_coords[1][0]:7.1f}, " \
-                    f"{realsense_3d_coords[1][1]:7.1f}, {realsense_3d_coords[1][2]:7.1f})\n"
-            info += f"            ({realsense_3d_coords[2][0]:7.1f}, {realsense_3d_coords[2][1]:7.1f}, " \
-                    f"{realsense_3d_coords[2][2]:7.1f}), ({realsense_3d_coords[3][0]:7.1f}, " \
-                    f"{realsense_3d_coords[3][1]:7.1f}, {realsense_3d_coords[3][2]:7.1f})\n"
-            length_x_realsense = np.abs(realsense_3d_coords[0][0] - realsense_3d_coords[1][0])
-            length_y_realsense = np.abs(realsense_3d_coords[0][1] - realsense_3d_coords[2][1])
-            info += f"Length X (RealSense): {length_x_realsense:7.2f}, " \
-                    f"Length Y (RealSense): {length_y_realsense:7.2f}\n"
-            info += f"Mean Depth (RealSense): {mean_depth_realsense:7.2f}\n\n"
-            return info
-
         aruco_info = ""
         for i, marker_id in enumerate(matching_ids_result):
             disparities, mean_disparity, variance_disparity, estimated_depth_mm, realsense_depth_mm = \
@@ -586,14 +567,15 @@ class OpencvUIController():
             )
             realsense_3d_coords = calculate_3d_coords(
                 matching_corners_left[i][:, 0], matching_corners_left[i][:, 1], realsense_depth_mm
-            )
+            ) if realsense_depth_mm is not None else None
 
             aruco_info += update_aruco_info(marker_id,
                                             estimated_3d_coords, realsense_3d_coords,
-                                            np.mean(estimated_depth_mm), np.mean(realsense_depth_mm))
+                                            np.mean(estimated_depth_mm),
+                                            np.mean(realsense_depth_mm) if realsense_depth_mm is not None else None)
 
         if self.display_option['epipolar_lines']:
-            if len(matching_ids_result) > 0 and self.epipolar_detector.fundamental_matrix is not None:
+            if len(matching_ids_result) > 0 and self.epipolar_detector.homography_ready:
                 left_colored, right_colored = self.epipolar_detector.draw_epilines_from_corners(
                     left_colored, right_colored, matching_corners_left, matching_corners_right)
             else:
@@ -630,7 +612,7 @@ class OpencvUIController():
                                      matching_corners_left: np.ndarray,
                                      matching_corners_right: np.ndarray,
                                      depth_image: Optional[np.ndarray] = None
-                                     ) -> Tuple[np.ndarray, float, float, np.ndarray, np.ndarray]:
+                                     ) -> Tuple[np.ndarray, float, float, np.ndarray, Optional[np.ndarray]]:
         """
         Calculate disparities, mean, variance, and depth from matching corners.
 
@@ -642,7 +624,7 @@ class OpencvUIController():
             depth_image (Optional[np.ndarray]): Depth image for calculating depth from image (optional).
 
         Returns:
-            Tuple[np.ndarray, float, float, np.ndarray, np.ndarray]:
+            Tuple[np.ndarray, float, float, np.ndarray, Optional[np.ndarray]]:
                 - Disparities between matching corners.
                 - Mean of disparities.
                 - Variance of disparities.
@@ -655,8 +637,9 @@ class OpencvUIController():
 
         estimated_depth_mm = (self.camera_params['focal_length'] * self.camera_params['baseline']) / disparities
 
-        realsense_depth_mm = np.zeros_like(estimated_depth_mm)
+        realsense_depth_mm = None
         if depth_image is not None:
+            realsense_depth_mm = np.zeros_like(estimated_depth_mm)
             for j, (cx, cy) in enumerate(matching_corners_left):
                 realsense_depth_mm[j] = depth_image[min(max(int(cy), 0), self.camera_params['height'] - 1),
                                                min(max(int(cx), 0), self.camera_params['width'] - 1)]

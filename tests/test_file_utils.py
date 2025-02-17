@@ -108,6 +108,7 @@ class TestFileUtils(unittest.TestCase):
             filename=log_path,
             level=logging.INFO,
             format="%(asctime)s - %(levelname)s - %(message)s",
+            force=True
         )
 
     @patch('cv2.imwrite')
