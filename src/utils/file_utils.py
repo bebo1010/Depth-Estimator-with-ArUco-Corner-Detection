@@ -7,6 +7,7 @@ import os
 import logging
 import json
 from typing import Optional, Tuple
+import time
 
 import yaml
 import cv2
@@ -91,6 +92,7 @@ def setup_logging(base_dir: str) -> None:
         filename=log_path,
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
+        force=True
     )
 
 def save_images(base_dir: str,
@@ -126,8 +128,12 @@ def save_images(base_dir: str,
     right_gray_path = os.path.join(right_gray_dir, f"right_image{image_index}.png")
 
     # Save the left and right grayscale images
+    start_time = time.perf_counter()
     cv2.imwrite(left_gray_path, left_gray_image)
+    logging.info("Time to save left image: %s", time.perf_counter() - start_time)
+    start_time = time.perf_counter()
     cv2.imwrite(right_gray_path, right_gray_image)
+    logging.info("Time to save right image: %s", time.perf_counter() - start_time)
 
     log_message = [
         f"Saved images - Left {prefix}: {left_gray_path}, Right {prefix}: {right_gray_path}"
