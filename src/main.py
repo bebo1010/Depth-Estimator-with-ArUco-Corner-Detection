@@ -51,10 +51,13 @@ if __name__ == "__main__":
                 HEIGHT = 720
                 PRINCIPAL_POINT = (614.695, 354.577)  # in pixels
 
-                camera1 = RealsenseCameraSystem(WIDTH, HEIGHT, connected_devices[0].get_info(rs.camera_info.serial_number))
-                camera2 = RealsenseCameraSystem(WIDTH, HEIGHT, connected_devices[1].get_info(rs.camera_info.serial_number))
+                camera1 = RealsenseCameraSystem(WIDTH, HEIGHT,
+                                                connected_devices[0].get_info(rs.camera_info.serial_number))
+                camera2 = RealsenseCameraSystem(WIDTH, HEIGHT,
+                                                connected_devices[1].get_info(rs.camera_info.serial_number))
                 cameras = DualRealsenseSystem(camera1, camera2)
-                start_ui_with_camera_system(ui_controller, cameras, "Realsense_D415", FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
+                start_ui_with_camera_system(ui_controller, cameras, "Realsense_D415",
+                                            FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
                 sys.exit()  # Use sys.exit() instead of exit()
         except SystemExit:
             pass
@@ -93,7 +96,7 @@ if __name__ == "__main__":
 
     # Try to detect FLIR cameras
     try:
-        import PySpin
+        import PySpin  # pylint: disable=unused-import
 
         FOCAL_LENGTH = 1060  # in pixels
         BASELINE = 80  # in mm
