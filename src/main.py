@@ -41,7 +41,7 @@ if __name__ == "__main__":
         context = rs.context()
         connected_devices = context.query_devices()
         if len(connected_devices) >= 2:
-            # D415
+            # # D415
             FOCAL_LENGTH = 908.36  # in pixels
             BASELINE = 150  # in mm
             WIDTH = 1280
@@ -62,14 +62,22 @@ if __name__ == "__main__":
     try:
         if len(connected_devices) >= 1:
             # D415
-            FOCAL_LENGTH = 908.36  # in pixels
-            BASELINE = 55  # in mm
-            WIDTH = 1280
-            HEIGHT = 720
-            PRINCIPAL_POINT = (614.695, 354.577)  # in pixels
+            # FOCAL_LENGTH = 908.36  # in pixels
+            # BASELINE = 55  # in mm
+            # WIDTH = 1280
+            # HEIGHT = 720
+            # PRINCIPAL_POINT = (614.695, 354.577)  # in pixels
+
+            # D435
+            FOCAL_LENGTH = 425.57  # in pixels
+            BASELINE = 50  # in mm
+            WIDTH = 848
+            HEIGHT = 480
+            PRINCIPAL_POINT = (428.448, 229.037)  # in pixels
 
             cameras = RealsenseCameraSystem(width=WIDTH, height=HEIGHT)
-            start_ui_with_camera_system(ui_controller, cameras, "Realsense", FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
+            start_ui_with_camera_system(ui_controller, cameras, "Realsense_D435",
+                                        FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
             sys.exit()  # Use sys.exit() instead of exit()
     except SystemExit:
         pass
