@@ -182,29 +182,6 @@ class OpencvUIController():
             if self._handle_key_presses(key, left_gray_image, right_gray_image, first_depth_image, second_depth_image):
                 break
 
-    def _draw_aruco_rectangle(self, image, corners, marker_id):
-        """
-        Draw a rectangle from the 4 corner points with red color and display the marker ID.
-
-        Args:
-            image (np.ndarray): Image on which to draw the rectangle.
-            corners (np.ndarray): Corner points of the ArUco marker.
-            marker_id (int): ID of the ArUco marker.
-
-        Returns:
-            None.
-        """
-        logging.info("Drawing ArUco rectangle.")
-        corners = corners.reshape((4, 2)).astype(int)  # Ensure corners are integers
-        for i in range(4):
-            start_point = tuple(corners[i])
-            end_point = tuple(corners[(i + 1) % 4])
-            cv2.line(image, start_point, end_point, (0, 0, 255), 2)
-
-        # Add the marker ID at the top-left corner of the rectangle
-        top_left_corner = tuple((corners[0][0], corners[0][1] - 10))
-        cv2.putText(image, f"ID: {marker_id}", top_left_corner, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-
     def _calibrate_cameras(self) -> None:
         """
         Calibrate the cameras using the saved chessboard images.
@@ -272,26 +249,6 @@ class OpencvUIController():
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)  # Black text
 
         cv2.imshow("Combined View (2x2)", window_image)
-
-    def _get_starting_index(self, directory: str) -> int:
-        """
-        Get the starting index for image files in the given directory.
-
-        args:
-            directory (str): The directory to search for image files.
-
-        return:
-            int:
-                - int: The starting index for image files in the given directory.
-        """
-        if not os.path.exists(directory):
-            return 1
-        files = [f for f in os.listdir(directory) if f.endswith(".png")]
-        indices = [
-            int(os.path.splitext(f)[0].split("image")[-1])
-            for f in files
-        ]
-        return max(indices, default=0) + 1
 
     def _handle_key_presses(self, key: int, left_gray_image: np.ndarray, right_gray_image: np.ndarray,
                             first_depth_image: Optional[np.ndarray], second_depth_image: Optional[np.ndarray]) -> bool:
