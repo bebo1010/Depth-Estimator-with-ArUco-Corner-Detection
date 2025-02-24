@@ -47,6 +47,7 @@
         - [x] Dual RealSense camera
     - [x] Interface for FLIR cameras
     - [x] Add support for multiple RealSense cameras
+    - [x] Include interfaces for grabbing grayscale and RGB images
 - [x] Display Functionality
     - [x] Horizontal lines and Vertical lines
     - [x] Epipolar lines
