@@ -61,3 +61,9 @@ test = [
     "pylint==3.2.7",
     "coverage==7.6.1"
 ]
+
+doc = [
+    "sphinx==7.1.2",
+    "sphinx_rtd_theme==3.0.2",
+    "sphinx-autobuild==2021.3.14",
+]
