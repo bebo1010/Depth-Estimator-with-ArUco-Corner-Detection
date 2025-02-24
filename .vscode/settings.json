@@ -13,5 +13,10 @@
         "./tests",
         "-p",
         "test_*.py"
-    ]
+    ],
+    "files.exclude": {
+    "**/__pycache__": true,
+    ".coverage": true,
+    "**/*.egg-info": true,
+    },
 }
