@@ -67,6 +67,8 @@
     - [ ] Load back the parameters and rectify the images
     - [ ] (Optional) Show reprojection error per image
 - [x] Auto rectification with fundamental matrix
+- [x] Saving the images
+    - [x] Also save the detected points in disk
 - [x] Load back the saved images
     - [x] Include camera parameters like focal length, baseline, etc
 - [x] Unit Tests
