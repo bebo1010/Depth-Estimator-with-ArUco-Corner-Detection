@@ -10,7 +10,7 @@ Welcome to Depth-Estimator-with-ArUco-Corners-Detection's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   src
+   modules
 
 
 
@@ -20,6 +20,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-.. automodule:: src
-    :members:
