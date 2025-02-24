@@ -1,5 +1,5 @@
 """
-    Abstract class for two cameras system.
+Abstract class for two cameras system.
 """
 from abc import ABC, abstractmethod
 from typing import Tuple
@@ -10,55 +10,34 @@ import cv2
 class TwoCamerasSystem(ABC):
     """
     Abstract class for two cameras system.
-
-    Functions:
-        __init__() -> None
-        get_grayscale_images() -> Tuple[bool, np.ndarray, np.ndarray]
-        get_depth_images() -> Tuple[bool, np.ndarray, np.ndarray]
-        get_width() -> int
-        get_height() -> int
-        release() -> bool
     """
 
     def __init__(self) -> None:
         """
         Initialize two cameras system.
 
-        args:
-        No arguments.
-
-        returns:
-        No return.
+        Returns
+        -------
+        None
         """
 
     @abstractmethod
     def get_grayscale_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
-        Get grayscale images for both camera.
-
-        args:
-        No arguments.
-
-        returns:
-        Tuple[bool, np.ndarray, np.ndarray]:
-            - bool: Whether images grabbing is successful or not.
-            - np.ndarray: left grayscale image.
-            - np.ndarray: right grayscale image.
+        Get grayscale images for both cameras.
         """
         return
 
     def get_rgb_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
-        Get RGB images for both camera.
+        Get RGB images for both cameras.
 
-        args:
-        No arguments.
-
-        returns:
-        Tuple[bool, np.ndarray, np.ndarray]:
+        Returns
+        -------
+        Tuple[bool, np.ndarray, np.ndarray]
             - bool: Whether images grabbing is successful or not.
-            - np.ndarray: left RGB image. (BGR in OpenCV format)
-            - np.ndarray: right RGB image. (BGR in OpenCV format)
+            - np.ndarray: Left RGB image (BGR in OpenCV format).
+            - np.ndarray: Right RGB image (BGR in OpenCV format).
         """
         total_success, left_image1, left_image2 = self.get_grayscale_images()
         try:
@@ -74,14 +53,12 @@ class TwoCamerasSystem(ABC):
         """
         Get depth images for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        Tuple[bool, np.ndarray, np.ndarray]:
+        Returns
+        -------
+        Tuple[bool, np.ndarray, np.ndarray]
             - bool: Whether depth image grabbing is successful or not.
-            - np.ndarray: first depth grayscale image.
-            - np.ndarray: second depth grayscale image.
+            - np.ndarray: First depth grayscale image.
+            - np.ndarray: Second depth grayscale image.
         """
         return
 
@@ -90,12 +67,10 @@ class TwoCamerasSystem(ABC):
         """
         Get width for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        int:
-            - int: Width of the camera system.
+        Returns
+        -------
+        int
+            Width of the camera system.
         """
         return
 
@@ -104,12 +79,10 @@ class TwoCamerasSystem(ABC):
         """
         Get height for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        int:
-            - int: Height of the camera system.
+        Returns
+        -------
+        int
+            Height of the camera system.
         """
         return
 
@@ -118,11 +91,9 @@ class TwoCamerasSystem(ABC):
         """
         Release the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        bool:
-            - bool: Whether releasing is successful or not.
+        Returns
+        -------
+        bool
+            Whether releasing is successful or not.
         """
         return

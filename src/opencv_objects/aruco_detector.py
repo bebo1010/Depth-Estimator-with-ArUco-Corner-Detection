@@ -9,12 +9,6 @@ import numpy as np
 class ArUcoDetector():
     """
     Detect ArUco markers in images
-
-    Functions:
-        __init__() -> None
-        detect_aruco(np.ndarray) -> Tuple[np.ndarray, np.ndarray]
-        detect_aruco_two_images(np.ndarray, np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]
-
     """
     def __init__(self) -> None:
         """
@@ -33,11 +27,14 @@ class ArUcoDetector():
         """
         Detect ArUco markers in a single image, and return detected IDs and corner points.
 
-        args:
-        image (np.ndarray): Image, should include ArUco markers in image.
+        Parameters
+        ----------
+        image : np.ndarray
+            Image, should include ArUco markers in image.
 
-        returns:
-        Tuple[np.ndarray, np.ndarray]:
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
             - np.ndarray: Detected IDs in image.
             - np.ndarray: Detected corner points in image.
         """
@@ -50,12 +47,16 @@ class ArUcoDetector():
         """
         Detect ArUco markers in two images, and return matching IDs and corner points.
 
-        args:
-        image_left (np.ndarray): Left image, should include ArUco markers in image.
-        image_right (np.ndarray): Right image, should include ArUco markers in image.
+        Parameters
+        ----------
+        image_left : np.ndarray
+            Left image, should include ArUco markers in image.
+        image_right : np.ndarray
+            Right image, should include ArUco markers in image.
 
-        returns:
-        Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray, np.ndarray]
             - np.ndarray: Matching IDs in both image.
             - np.ndarray: Matching corner points in left image.
             - np.ndarray: Matching corner points in right image.

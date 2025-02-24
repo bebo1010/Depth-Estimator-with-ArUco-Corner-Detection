@@ -14,40 +14,21 @@ from .single_camera_system import SingleCameraSystem
 class FlirCameraSystem(SingleCameraSystem):
     """
     FLIR camera system, inherited from SingleCameraSystem.
-
-    Functions:
-        __init__() -> None
-        get_grayscale_image() -> Tuple[bool, np.ndarray]
-        get_depth_image() -> Tuple[bool, np.ndarray]
-        get_width() -> int
-        get_height() -> int
-        release() -> bool
-        configure_gpio_primary() -> None
-        configure_gpio_secondary() -> None
-        enable_trigger_mode() -> None
-        disable_trigger_mode() -> None
-        _get_default_config() -> dict
-        _get_serial_number() -> int
-        _configure_camera() -> None
-        _load_user_set(str) -> None
-        _configure_camera_general() -> None
-        _configure_acquisition() -> None
-        _configure_exposure() -> None
-        _configure_gain() -> None
-        _configure_white_balance() -> None
     """
-    def __init__(self,
-                 config_yaml_path,
-                 serial_number = "21091478"):
+    def __init__(self, config_yaml_path: str, serial_number: str = "21091478") -> None:
         """
         Initialize FLIR camera system.
 
-        args:
-        config_yaml_path (str): path to config file.
-        serial_number (str): serial number of the camera.
+        Parameters
+        ----------
+        config_yaml_path : str
+            Path to config file.
+        serial_number : str
+            Serial number of the camera.
 
-        returns:
-        No return.
+        Returns
+        -------
+        None
         """
         super().__init__()
         self.full_config = parse_yaml_config(config_yaml_path)
@@ -77,13 +58,11 @@ class FlirCameraSystem(SingleCameraSystem):
         """
         Get grayscale image for the camera.
 
-        args:
-        No arguments.
-
-        returns:
-        Tuple[bool, np.ndarray]:
+        Returns
+        -------
+        Tuple[bool, np.ndarray]
             - bool: Whether image grabbing is successful or not.
-            - np.ndarray: grayscale image.
+            - np.ndarray: Grayscale image.
         """
         if not self.cam.IsStreaming():
             self.cam.BeginAcquisition()
@@ -112,13 +91,11 @@ class FlirCameraSystem(SingleCameraSystem):
         """
         Get depth images for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        Tuple[bool, np.ndarray]:
+        Returns
+        -------
+        Tuple[bool, np.ndarray]
             - bool: Whether depth image grabbing is successful or not.
-            - np.ndarray: depth grayscale image.
+            - np.ndarray: Depth grayscale image.
         """
         # No depth image in flir camera system
         return False, None
@@ -126,36 +103,30 @@ class FlirCameraSystem(SingleCameraSystem):
         """
         Get width for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        int:
-            - int: Width of the camera system.
+        Returns
+        -------
+        int
+            Width of the camera system.
         """
         return int(self.full_config['camera_settings']['width'])
     def get_height(self) -> int:
         """
         Get height for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        int:
-            - int: Height of the camera system.
+        Returns
+        -------
+        int
+            Height of the camera system.
         """
         return int(self.full_config['camera_settings']['height'])
     def release(self) -> bool:
         """
         Release the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        bool:
-            - bool: Whether releasing is successful or not.
+        Returns
+        -------
+        bool
+            Whether releasing is successful or not.
         """
         logging.info("Stopping camera acquisition...")
         self.cam.EndAcquisition()
@@ -177,10 +148,10 @@ class FlirCameraSystem(SingleCameraSystem):
     def configure_gpio_primary(self) -> None:
         """
         Configure the GPIO settings to primary for single camera.
-        Settings: trigger mode, line selector, line mode, line source
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         serial_number = self.serial_number
         nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
@@ -217,10 +188,10 @@ class FlirCameraSystem(SingleCameraSystem):
     def configure_gpio_secondary(self) -> None:
         """
         Configure the GPIO settings to secondary for single camera.
-        Settings: trigger selector, trigger mode, trigger source, trigger overlap, trigger source
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         serial_number = self.serial_number
         nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
@@ -277,8 +248,9 @@ class FlirCameraSystem(SingleCameraSystem):
         """
         Enable trigger mode for single camera.
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         serial_number = self.serial_number
         nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
@@ -291,8 +263,9 @@ class FlirCameraSystem(SingleCameraSystem):
         """
         Disable trigger mode for single camera.
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         serial_number = self.serial_number
         nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
@@ -303,15 +276,12 @@ class FlirCameraSystem(SingleCameraSystem):
 
     def _get_default_config(self) -> dict:
         """
-        Get default configuration file for flir camera system.
-        Default config is for grasshopper3 cameras
+        Get default configuration file for FLIR camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        dict:
-            - dict: dictionary of full configs.
+        Returns
+        -------
+        dict
+            Dictionary of full configs.
         """
         config = {
             'camera_settings': {
@@ -361,9 +331,10 @@ class FlirCameraSystem(SingleCameraSystem):
         """
         Get serial number for the camera.
 
-        Returns:
-            int:
-                - int: Serial number of the camera.
+        Returns
+        -------
+        int
+            Serial number of the camera.
         """
         nodemap: PySpin.NodeMap = self.cam.GetTLDeviceNodeMap()
         serial_number_node = PySpin.CStringPtr(nodemap.GetNode('DeviceSerialNumber'))
@@ -375,8 +346,9 @@ class FlirCameraSystem(SingleCameraSystem):
         """
         Configure the basic settings for single camera.
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         serial_number = self.serial_number
         logging.info("Configuring camera %s", serial_number)
@@ -393,10 +365,14 @@ class FlirCameraSystem(SingleCameraSystem):
         """
         Load a specified user set from the camera.
 
-        args:
-            user_set_name (str): The name of the user set to load (e.g., "Default").
-        returns:
-        No return.
+        Parameters
+        ----------
+        user_set_name : str
+            The name of the user set to load (e.g., "Default").
+
+        Returns
+        -------
+        None
         """
         serial_number = self.serial_number
         nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
@@ -428,10 +404,10 @@ class FlirCameraSystem(SingleCameraSystem):
     def _configure_camera_general(self) -> None:
         """
         Configure the general settings for single camera.
-        Settings: width, height, offset, pixel format
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         serial_number = self.serial_number
         nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
@@ -467,10 +443,10 @@ class FlirCameraSystem(SingleCameraSystem):
     def _configure_acquisition(self) -> None:
         """
         Configure the acquisition settings for single camera.
-        Settings: continuous streaming, frame rate control
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         serial_number = self.serial_number
         nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
@@ -502,10 +478,10 @@ class FlirCameraSystem(SingleCameraSystem):
     def _configure_exposure(self) -> None:
         """
         Configure the exposure settings for single camera.
-        Settings: disable automatic exposure, set exposure time
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         serial_number = self.serial_number
         nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
@@ -526,10 +502,10 @@ class FlirCameraSystem(SingleCameraSystem):
     def _configure_gain(self) -> None:
         """
         Configure the gain settings for single camera.
-        Settings: disable automatic gain, set gain db
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         serial_number = self.serial_number
         nodemap: PySpin.NodeMap = self.cam.GetNodeMap()
@@ -552,11 +528,10 @@ class FlirCameraSystem(SingleCameraSystem):
     def _configure_white_balance(self) -> None:
         """
         Configure the white balance settings for single camera.
-        Can also set white balance to `Once`.
-        Settings: disable automatic white balance, set white balance red and blue ratio.
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         serial_number = self.serial_number
         nodemap: PySpin.NodeMap = self.cam.GetNodeMap()

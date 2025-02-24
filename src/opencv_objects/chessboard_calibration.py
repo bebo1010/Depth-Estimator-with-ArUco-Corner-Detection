@@ -33,8 +33,10 @@ class ChessboardCalibrator():
         """
         Get the pattern size of the chessboard.
 
-        Returns:
-            Tuple[int, int]: Pattern size of the chessboard.
+        Returns
+        -------
+        Tuple[int, int]
+            Pattern size of the chessboard.
         """
         return self._pattern_size
 
@@ -43,8 +45,10 @@ class ChessboardCalibrator():
         """
         Set a new pattern size for the chessboard.
 
-        Args:
-            new_pattern_size (Tuple[int, int]): New pattern size of the chessboard.
+        Parameters
+        ----------
+        new_pattern_size : Tuple[int, int]
+            New pattern size of the chessboard.
         """
         self._pattern_size = new_pattern_size
         logging.info("Pattern size set to %s.", new_pattern_size)
@@ -54,8 +58,10 @@ class ChessboardCalibrator():
         """
         Get the square size of the chessboard in millimeters.
 
-        Returns:
-            float: Square size of the chessboard in millimeters.
+        Returns
+        -------
+        float
+            Square size of the chessboard in millimeters.
         """
         return self._square_size_mm
 
@@ -64,8 +70,10 @@ class ChessboardCalibrator():
         """
         Set a new square size for the chessboard in millimeters.
 
-        Args:
-            new_square_size_mm (float): New square size of the chessboard in millimeters.
+        Parameters
+        ----------
+        new_square_size_mm : float
+            New square size of the chessboard in millimeters.
         """
         self._square_size_mm = new_square_size_mm
         logging.info("Square size mm set to %f.", new_square_size_mm)
@@ -75,8 +83,10 @@ class ChessboardCalibrator():
         """
         Get the calibration parameters for the left camera.
 
-        Returns:
-            Dict[str, Any]: Calibration parameters for the left camera.
+        Returns
+        -------
+        Dict[str, Any]
+            Calibration parameters for the left camera.
         """
         return self._left_calibration_parameters
 
@@ -85,8 +95,10 @@ class ChessboardCalibrator():
         """
         Set the calibration parameters for the left camera.
 
-        Args:
-            parameters (Dict[str, Any]): Calibration parameters for the left camera.
+        Parameters
+        ----------
+        parameters : Dict[str, Any]
+            Calibration parameters for the left camera.
         """
         self._left_calibration_parameters = parameters
         logging.info("Left camera parameters set.")
@@ -96,8 +108,10 @@ class ChessboardCalibrator():
         """
         Get the calibration parameters for the right camera.
 
-        Returns:
-            Dict[str, Any]: Calibration parameters for the right camera.
+        Returns
+        -------
+        Dict[str, Any]
+            Calibration parameters for the right camera.
         """
         return self._right_calibration_parameters
 
@@ -106,8 +120,10 @@ class ChessboardCalibrator():
         """
         Set the calibration parameters for the right camera.
 
-        Args:
-            parameters (Dict[str, Any]): Calibration parameters for the right camera.
+        Parameters
+        ----------
+        parameters : Dict[str, Any]
+            Calibration parameters for the right camera.
         """
         self._right_calibration_parameters = parameters
         logging.info("Right camera parameters set.")
@@ -117,8 +133,10 @@ class ChessboardCalibrator():
         """
         Get the calibration parameters for the stereo camera setup.
 
-        Returns:
-            Dict[str, Any]: Calibration parameters for the stereo camera setup.
+        Returns
+        -------
+        Dict[str, Any]
+            Calibration parameters for the stereo camera setup.
         """
         return self._stereo_calibration_parameters
 
@@ -127,8 +145,10 @@ class ChessboardCalibrator():
         """
         Set the calibration parameters for the stereo camera setup.
 
-        Args:
-            parameters (Dict[str, Any]): Calibration parameters for the stereo camera setup.
+        Parameters
+        ----------
+        parameters : Dict[str, Any]
+            Calibration parameters for the stereo camera setup.
         """
         self._stereo_calibration_parameters = parameters
         logging.info("Stereo camera parameters set.")
@@ -137,13 +157,16 @@ class ChessboardCalibrator():
         """
         Detect chessboard corners in a single image, and return detected corners and IDs.
 
-        Args:
-            image (np.ndarray): Image, should include chessboard pattern.
+        Parameters
+        ----------
+        image : np.ndarray
+            Image, should include chessboard pattern.
 
-        Returns:
-            Tuple[bool, np.ndarray]:
-                - bool: Whether corners were detected.
-                - np.ndarray: Detected corners in image.
+        Returns
+        -------
+        Tuple[bool, np.ndarray]
+            - bool: Whether corners were detected.
+            - np.ndarray: Detected corners in image.
         """
         logging.info("Detecting chessboard corners in image.")
         ret, corners = cv2.findChessboardCorners(image, self.pattern_size)
@@ -162,12 +185,17 @@ class ChessboardCalibrator():
         """
         Display chessboard corners on an image.
 
-        Args:
-            image (np.ndarray): Image, should include chessboard pattern.
-            corners (np.ndarray): Detected corners in image.
+        Parameters
+        ----------
+        image : np.ndarray
+            Image, should include chessboard pattern.
+        corners : np.ndarray
+            Detected corners in image.
 
-        Returns:
-            np.ndarray: Image with corners drawn.
+        Returns
+        -------
+        np.ndarray
+            Image with corners drawn.
         """
         logging.info("Drawing chessboard corners on image.")
         return cv2.drawChessboardCorners(image, self.pattern_size, corners, True)
@@ -180,13 +208,19 @@ class ChessboardCalibrator():
         """
         Calibrate a single camera using detected image points.
 
-        Args:
-            image_points (List[np.ndarray]): List of detected image points.
-            image_size (Tuple[int, int]): Size of the image.
-            camera_index (int): Index of the camera. `0` for left camera, `1` for right camera.
+        Parameters
+        ----------
+        image_points : List[np.ndarray]
+            List of detected image points.
+        image_size : Tuple[int, int]
+            Size of the image.
+        camera_index : int, optional
+            Index of the camera. `0` for left camera, `1` for right camera.
 
-        Returns:
-            bool: Whether calibration was successful.
+        Returns
+        -------
+        bool
+            Whether calibration was successful.
         """
         assert len(image_points) > 0, "No image points detected."
         obj_points = self._generate_object_points(len(image_points))
@@ -229,13 +263,19 @@ class ChessboardCalibrator():
         """
         Calibrate a stereo camera setup using detected image points from both cameras.
 
-        Args:
-            left_image_points (List[np.ndarray]): List of detected image points from the left camera.
-            right_image_points (List[np.ndarray]): List of detected image points from the right camera.
-            image_size (Tuple[int, int]): Size of the image.
+        Parameters
+        ----------
+        left_image_points : List[np.ndarray]
+            List of detected image points from the left camera.
+        right_image_points : List[np.ndarray]
+            List of detected image points from the right camera.
+        image_size : Tuple[int, int]
+            Size of the image.
 
-        Returns:
-            bool: Whether calibration was successful.
+        Returns
+        -------
+        bool
+            Whether calibration was successful.
         """
         assert len(left_image_points) == len(right_image_points), \
              "Number of points in left and right images must be equal."
@@ -304,12 +344,17 @@ class ChessboardCalibrator():
         """
         Rectify a pair of stereo images using the calibration parameters.
 
-        Args:
-            left_image (np.ndarray): Image from the left camera.
-            right_image (np.ndarray): Image from the right camera.
+        Parameters
+        ----------
+        left_image : np.ndarray
+            Image from the left camera.
+        right_image : np.ndarray
+            Image from the right camera.
 
-        Returns:
-            Tuple[np.ndarray, np.ndarray]: Rectified images from the left and right cameras.
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            Rectified images from the left and right cameras.
         """
         logging.info("Rectifying stereo images.")
         left_map1, left_map2 = cv2.initUndistortRectifyMap(
@@ -340,8 +385,10 @@ class ChessboardCalibrator():
         """
         Save the calibration parameters to JSON files.
 
-        Args:
-            db_path (str): Directory path to save the JSON files.
+        Parameters
+        ----------
+        db_path : str, optional
+            Directory path to save the JSON files.
         """
         left_parameter_save_path = db_path + "/left_camera_parameters.json"
         right_parameter_save_path = db_path + "/right_camera_parameters.json"
@@ -365,11 +412,15 @@ class ChessboardCalibrator():
         """
         Generate object points for the chessboard pattern.
 
-        Args:
-            num_images (int): Number of images.
+        Parameters
+        ----------
+        num_images : int
+            Number of images.
 
-        Returns:
-            List[np.ndarray]: List of object points.
+        Returns
+        -------
+        List[np.ndarray]
+            List of object points.
         """
         objp = np.zeros((self.pattern_size[0] * self.pattern_size[1], 3), np.float32)
         objp[:, :2] = np.mgrid[0:self.pattern_size[0], 0:self.pattern_size[1]].T.reshape(-1, 2)
