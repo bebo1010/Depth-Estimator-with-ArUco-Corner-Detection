@@ -8,6 +8,7 @@ import logging
 import json
 from typing import Optional, Tuple
 import time
+import csv
 
 import yaml
 import cv2
@@ -70,12 +71,14 @@ def setup_directories(base_dir: str) -> None:
     depth_dir = os.path.join(base_dir, "depth_images")
     left_chessboard_dir = os.path.join(base_dir, "left_chessboard_images")
     right_chessboard_dir = os.path.join(base_dir, "right_chessboard_images")
+    point_info_dir = os.path.join(base_dir, "point_information")
 
     os.makedirs(left_ir_dir, exist_ok=True)
     os.makedirs(right_ir_dir, exist_ok=True)
     os.makedirs(depth_dir, exist_ok=True)
     os.makedirs(left_chessboard_dir, exist_ok=True)
     os.makedirs(right_chessboard_dir, exist_ok=True)
+    os.makedirs(point_info_dir, exist_ok=True)
 
 def setup_logging(base_dir: str) -> None:
     """
@@ -245,3 +248,26 @@ def load_setup_info(directory: str) -> Optional[dict]:
         setup_info = json.load(f)
 
     return setup_info
+
+def save_aruco_info_to_csv(base_dir: str, image_index: int, aruco_data: list) -> None:
+    """
+    Save ArUco marker information to a CSV file.
+
+    Args:
+        base_dir (str): The base directory to save the CSV file.
+        image_index (int): The index for naming the CSV file.
+        aruco_data (list): List of ArUco marker data to save.
+
+    Returns:
+        None.
+    """
+    point_info_dir = os.path.join(base_dir, "point_information")
+    csv_filename = os.path.join(point_info_dir, f"aruco_info_{image_index:04d}.csv")
+    with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Marker ID",
+                         "Left 2D Corner X", "Left 2D Corner Y",
+                         "Right 2D Corner X", "Right 2D Corner Y",
+                         "Estimated 3D X", "Estimated 3D Y", "Estimated 3D Z",
+                         "RealSense 3D X", "RealSense 3D Y", "RealSense 3D Z"])
+        writer.writerows(aruco_data)

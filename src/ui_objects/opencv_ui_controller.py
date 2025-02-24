@@ -13,8 +13,8 @@ from PyQt5.QtWidgets import QApplication, QFileDialog, QMessageBox
 from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCalibrator
 from src.camera_objects import TwoCamerasSystem
 from src.utils import get_starting_index, setup_directories, setup_logging, save_images, draw_lines, \
-    apply_colormap, draw_aruco_rectangle, load_images_from_directory, update_aruco_info
-from src.utils.file_utils import save_setup_info, load_setup_info
+    apply_colormap, draw_aruco_rectangle, load_images_from_directory, update_aruco_info, \
+    save_setup_info, load_setup_info, save_aruco_info_to_csv
 
 class OpencvUIController():
     """
@@ -411,6 +411,32 @@ class OpencvUIController():
             save_images(self.base_dir, left_gray_image, right_gray_image,
                         self.image_index, first_depth_image, second_depth_image,
                         prefix="ArUco")
+
+            # Process and save CSV file with 2D ArUco and 3D marker information
+            matching_ids_result, matching_corners_left, matching_corners_right = \
+                self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
+
+            aruco_data = []
+            for i, marker_id in enumerate(matching_ids_result):
+                _, _, _, _, _, estimated_3d_coords, realsense_3d_coords = \
+                    self._process_disparity_and_depth(matching_corners_left[i], matching_corners_right[i],
+                                                      first_depth_image)
+
+                for j, (left_corner, right_corner) in \
+                    enumerate(zip(matching_corners_left[i], matching_corners_right[i])):
+
+                    aruco_data.append([marker_id,
+                                       left_corner[0], left_corner[1],
+                                       right_corner[0], right_corner[1],
+                                       estimated_3d_coords[j][0], # Estimated 3D X
+                                       estimated_3d_coords[j][1], # Estimated 3D Y
+                                       estimated_3d_coords[j][2], # Estimated 3D Z
+                                       realsense_3d_coords[j][0] if realsense_3d_coords is not None else None,
+                                       realsense_3d_coords[j][1] if realsense_3d_coords is not None else None,
+                                       realsense_3d_coords[j][2] if realsense_3d_coords is not None else None])
+
+            save_aruco_info_to_csv(self.base_dir, self.image_index, aruco_data)
+
             self.image_index += 1
 
         return False
