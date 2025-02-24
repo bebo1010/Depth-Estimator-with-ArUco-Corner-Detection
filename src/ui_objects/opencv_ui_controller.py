@@ -13,8 +13,8 @@ from PyQt5.QtWidgets import QApplication, QFileDialog, QMessageBox
 from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCalibrator
 from src.camera_objects import TwoCamerasSystem
 from src.utils import get_starting_index, setup_directories, setup_logging, save_images, draw_lines, \
-    apply_colormap, draw_aruco_rectangle, load_images_from_directory, update_aruco_info
-from src.utils.file_utils import save_setup_info, load_setup_info
+    apply_colormap, draw_aruco_rectangle, load_images_from_directory, update_aruco_info, \
+    save_setup_info, load_setup_info, save_aruco_info_to_csv
 
 class OpencvUIController():
     """
@@ -411,6 +411,32 @@ class OpencvUIController():
             save_images(self.base_dir, left_gray_image, right_gray_image,
                         self.image_index, first_depth_image, second_depth_image,
                         prefix="ArUco")
+
+            # Process and save CSV file with 2D ArUco and 3D marker information
+            matching_ids_result, matching_corners_left, matching_corners_right = \
+                self.aruco_detector.detect_aruco_two_images(left_gray_image, right_gray_image)
+
+            aruco_data = []
+            for i, marker_id in enumerate(matching_ids_result):
+                _, _, _, _, _, estimated_3d_coords, realsense_3d_coords = \
+                    self._process_disparity_and_depth(matching_corners_left[i], matching_corners_right[i],
+                                                      first_depth_image)
+
+                for j, (left_corner, right_corner) in \
+                    enumerate(zip(matching_corners_left[i], matching_corners_right[i])):
+
+                    aruco_data.append([marker_id,
+                                       left_corner[0], left_corner[1],
+                                       right_corner[0], right_corner[1],
+                                       estimated_3d_coords[j][0], # Estimated 3D X
+                                       estimated_3d_coords[j][1], # Estimated 3D Y
+                                       estimated_3d_coords[j][2], # Estimated 3D Z
+                                       realsense_3d_coords[j][0] if realsense_3d_coords is not None else None,
+                                       realsense_3d_coords[j][1] if realsense_3d_coords is not None else None,
+                                       realsense_3d_coords[j][2] if realsense_3d_coords is not None else None])
+
+            save_aruco_info_to_csv(self.base_dir, self.image_index, aruco_data)
+
             self.image_index += 1
 
         return False
@@ -545,14 +571,11 @@ class OpencvUIController():
         first_depth_colormap = apply_colormap(first_depth_image, left_colored)
         second_depth_colormap = apply_colormap(second_depth_image, left_colored)
 
-        def calculate_3d_coords(xs, ys, depths):
-            return [((x - self.camera_params['principal_point'][0]) * depth / self.camera_params['focal_length'],
-                     (y - self.camera_params['principal_point'][1]) * depth / self.camera_params['focal_length'], depth)
-                    for x, y, depth in zip(xs, ys, depths)]
-
         aruco_info = ""
         for i, marker_id in enumerate(matching_ids_result):
-            disparities, mean_disparity, variance_disparity, estimated_depth_mm, realsense_depth_mm = \
+            disparities, mean_disparity, variance_disparity, \
+            estimated_depth_mm, realsense_depth_mm, \
+            estimated_3d_coords, realsense_3d_coords = \
                 self._process_disparity_and_depth(matching_corners_left[i], matching_corners_right[i],
                                                   first_depth_image)
 
@@ -560,14 +583,6 @@ class OpencvUIController():
                          "Mean Disparity: %.2f, Variance: %.2f, Disparities: %s",
                          marker_id, np.mean(estimated_depth_mm), np.mean(realsense_depth_mm),
                          mean_disparity, variance_disparity, disparities.tolist())
-
-            # Calculate 3D coordinates
-            estimated_3d_coords = calculate_3d_coords(
-                matching_corners_left[i][:, 0], matching_corners_left[i][:, 1], estimated_depth_mm
-            )
-            realsense_3d_coords = calculate_3d_coords(
-                matching_corners_left[i][:, 0], matching_corners_left[i][:, 1], realsense_depth_mm
-            ) if realsense_depth_mm is not None else None
 
             aruco_info += update_aruco_info(marker_id,
                                             estimated_3d_coords, realsense_3d_coords,
@@ -612,7 +627,9 @@ class OpencvUIController():
                                      matching_corners_left: np.ndarray,
                                      matching_corners_right: np.ndarray,
                                      depth_image: Optional[np.ndarray] = None
-                                     ) -> Tuple[np.ndarray, float, float, np.ndarray, Optional[np.ndarray]]:
+                                     ) -> Tuple[np.ndarray, float, float,
+                                                np.ndarray, Optional[np.ndarray],
+                                                Optional[np.ndarray], Optional[np.ndarray]]:
         """
         Calculate disparities, mean, variance, and depth from matching corners.
 
@@ -624,12 +641,16 @@ class OpencvUIController():
             depth_image (Optional[np.ndarray]): Depth image for calculating depth from image (optional).
 
         Returns:
-            Tuple[np.ndarray, float, float, np.ndarray, Optional[np.ndarray]]:
+            Tuple[np.ndarray, float, float,
+                np.ndarray, Optional[np.ndarray],
+                Optional[np.ndarray], Optional[np.ndarray]]:
                 - Disparities between matching corners.
                 - Mean of disparities.
                 - Variance of disparities.
                 - Calculated depth per corner in mm.
                 - Depths at the 4 corner points from depth image (if provided).
+                - 3D coordinates from estimated depth.
+                - 3D coordinates from depth image (if provided).
         """
         disparities = np.abs(matching_corners_left[:, 0] - matching_corners_right[:, 0])
         mean_disparity = np.mean(disparities)
@@ -637,14 +658,29 @@ class OpencvUIController():
 
         estimated_depth_mm = (self.camera_params['focal_length'] * self.camera_params['baseline']) / disparities
 
+        def calculate_3d_coords(xs, ys, depths):
+            return [((x - self.camera_params['principal_point'][0]) * depth / self.camera_params['focal_length'],
+                     (y - self.camera_params['principal_point'][1]) * depth / self.camera_params['focal_length'], depth)
+                    for x, y, depth in zip(xs, ys, depths)]
+
+        estimated_3d_coords = calculate_3d_coords(
+            matching_corners_left[:, 0], matching_corners_left[:, 1], estimated_depth_mm
+        )
+
         realsense_depth_mm = None
+        realsense_3d_coords = None
         if depth_image is not None:
             realsense_depth_mm = np.zeros_like(estimated_depth_mm)
             for j, (cx, cy) in enumerate(matching_corners_left):
                 realsense_depth_mm[j] = depth_image[min(max(int(cy), 0), self.camera_params['height'] - 1),
                                                min(max(int(cx), 0), self.camera_params['width'] - 1)]
+            realsense_3d_coords = calculate_3d_coords(
+                matching_corners_left[:, 0], matching_corners_left[:, 1], realsense_depth_mm
+            )
 
-        return disparities, mean_disparity, variance_disparity, estimated_depth_mm, realsense_depth_mm
+        return disparities, mean_disparity, variance_disparity, \
+            estimated_depth_mm, realsense_depth_mm, \
+            estimated_3d_coords, realsense_3d_coords
 
     def _save_chessboard_images(self, left_gray_image: np.ndarray, right_gray_image: np.ndarray) -> None:
         """
