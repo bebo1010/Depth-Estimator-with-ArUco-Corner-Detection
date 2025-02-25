@@ -578,7 +578,8 @@ class OpencvUIController():
 
             logging.info("Marker ID: %d, Calculated Depth: %.2f mm, Depth Image Depth: %s mm, "
                          "Mean Disparity: %.2f, Variance: %.2f, Disparities: %s",
-                         marker_id, np.mean(estimated_depth_mm), np.mean(realsense_depth_mm),
+                         marker_id, np.mean(estimated_depth_mm),
+                         np.mean(realsense_depth_mm) if realsense_depth_mm is not None else None,
                          mean_disparity, variance_disparity, disparities.tolist())
 
             aruco_info += update_aruco_info(marker_id,
