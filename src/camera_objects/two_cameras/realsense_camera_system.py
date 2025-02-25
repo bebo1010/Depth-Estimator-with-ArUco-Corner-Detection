@@ -53,7 +53,13 @@ class RealsenseCameraSystem(TwoCamerasSystem):
 
         # Start the pipeline
         logging.info("Starting the Realsense pipeline")
-        self.pipeline.start(config)
+        pipeline_profile = self.pipeline.start(config)
+
+        # Disable IR projector
+        device = pipeline_profile.get_device()
+        depth_sensor = device.query_sensors()[0]
+        if depth_sensor.supports(rs.option.emitter_enabled):
+            depth_sensor.set_option(rs.option.emitter_enabled, 0)
         logging.info("Realsense pipeline started successfully")
 
     def get_grayscale_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
