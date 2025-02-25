@@ -18,12 +18,15 @@ def get_starting_index(directory: str) -> int:
     """
     Get the starting index for image files in the given directory.
 
-    args:
-        directory (str): The directory to search for image files.
+    Parameters
+    ----------
+    directory : str
+        The directory to search for image files.
 
-    return:
-        int:
-            - int: The starting index for image files in the given directory.
+    Returns
+    -------
+    int
+        The starting index for image files in the given directory.
     """
     if not os.path.exists(directory):
         return 1
@@ -38,12 +41,15 @@ def parse_yaml_config(config_yaml_path: str) -> dict:
     """
     Parse configuration file for flir camera system.
 
-    args:
-    config_yaml_path (str): path to config file.
+    Parameters
+    ----------
+    config_yaml_path : str
+        Path to config file.
 
-    returns:
-    dict:
-        - dict: dictionary of full configs or None if an error occurs.
+    Returns
+    -------
+    dict
+        Dictionary of full configs or None if an error occurs.
     """
     try:
         with open(config_yaml_path, 'r', encoding="utf-8") as file:
@@ -58,11 +64,14 @@ def setup_directories(base_dir: str) -> None:
     """
     Make directories for storing images and logs.
 
-    Args:
-        base_dir (str): The base directory to create subdirectories in.
+    Parameters
+    ----------
+    base_dir : str
+        The base directory to create subdirectories in.
 
-    Returns:
-        None.
+    Returns
+    -------
+    None
     """
     os.makedirs(base_dir, exist_ok=True)
 
@@ -84,11 +93,14 @@ def setup_logging(base_dir: str) -> None:
     """
     Setup logging for the application.
 
-    Args:
-        base_dir (str): The base directory to save the log file in.
+    Parameters
+    ----------
+    base_dir : str
+        The base directory to save the log file in.
 
-    Returns:
-        None.
+    Returns
+    -------
+    None
     """
     log_path = os.path.join(base_dir, "aruco_depth_log.txt")
     logging.basicConfig(
@@ -109,17 +121,26 @@ def save_images(base_dir: str,
     """
     Save the images to disk.
 
-    Args:
-        base_dir (str): The base directory to save the images.
-        left_gray_image (np.ndarray): Grayscale image of the left camera.
-        right_gray_image (np.ndarray): Grayscale image of the right camera.
-        image_index (int): The index for naming the saved images.
-        first_depth_image (Optional[np.ndarray]): First depth image.
-        second_depth_image (Optional[np.ndarray]): Second depth image.
-        prefix (str): Prefix for the image directories.
+    Parameters
+    ----------
+    base_dir : str
+        The base directory to save the images.
+    left_gray_image : np.ndarray
+        Grayscale image of the left camera.
+    right_gray_image : np.ndarray
+        Grayscale image of the right camera.
+    image_index : int
+        The index for naming the saved images.
+    first_depth_image : Optional[np.ndarray], optional
+        First depth image, defaults to None.
+    second_depth_image : Optional[np.ndarray], optional
+        Second depth image, defaults to None.
+    prefix : str, optional
+        Prefix for the image directories, defaults to "".
 
-    Returns:
-        None.
+    Returns
+    -------
+    None
     """
     # File paths
     left_gray_dir = os.path.join(base_dir, f"left_{prefix}_images")
@@ -173,13 +194,16 @@ def load_images_from_directory(selected_dir: str) -> Tuple[Optional[list], Optio
     """
     Load images from a selected directory.
 
-    Args:
-        selected_dir (str): The directory to load images from.
+    Parameters
+    ----------
+    selected_dir : str
+        The directory to load images from.
 
-    Returns:
-        Tuple[Optional[list], Optional[str]]:
-            - List of tuples containing paths to left, right, and depth images.
-            - Error message if any error occurs, otherwise None.
+    Returns
+    -------
+    Tuple[Optional[list], Optional[str]]
+        Tuple containing a list of tuples with paths to left, right, and depth images,
+        and an error message if any error occurs.
     """
     left_aruco_dir = os.path.join(selected_dir, "left_ArUco_images")
     right_aruco_dir = os.path.join(selected_dir, "right_ArUco_images")
@@ -211,11 +235,16 @@ def save_setup_info(base_dir: str, camera_params: dict) -> None:
     """
     Save the setup information to a JSON file.
 
-    Args:
-        base_dir (str): The base directory to save the setup information.
-        camera_params (dict): The camera parameters.
-    Returns:
-        None.
+    Parameters
+    ----------
+    base_dir : str
+        The base directory to save the setup information.
+    camera_params : dict
+        The camera parameters.
+
+    Returns
+    -------
+    None
     """
     setup_info = {
         "system_prefix": camera_params['system_prefix'],
@@ -233,11 +262,15 @@ def load_setup_info(directory: str) -> Optional[dict]:
     """
     Load the setup information from a JSON file.
 
-    Args:
-        directory (str): The directory to load the setup information from.
+    Parameters
+    ----------
+    directory : str
+        The directory to load the setup information from.
 
-    Returns:
-        Optional[dict]: The setup information if loaded successfully, otherwise None.
+    Returns
+    -------
+    Optional[dict]
+        The setup information if loaded successfully, otherwise None.
     """
     setup_path = os.path.join(directory, "setup.json")
     if not os.path.exists(setup_path):
@@ -253,13 +286,18 @@ def save_aruco_info_to_csv(base_dir: str, image_index: int, aruco_data: list) ->
     """
     Save ArUco marker information to a CSV file.
 
-    Args:
-        base_dir (str): The base directory to save the CSV file.
-        image_index (int): The index for naming the CSV file.
-        aruco_data (list): List of ArUco marker data to save.
+    Parameters
+    ----------
+    base_dir : str
+        The base directory to save the CSV file.
+    image_index : int
+        The index for naming the CSV file.
+    aruco_data : list
+        List of ArUco marker data to save.
 
-    Returns:
-        None.
+    Returns
+    -------
+    None
     """
     point_info_dir = os.path.join(base_dir, "point_information")
     csv_filename = os.path.join(point_info_dir, f"aruco_info_{image_index:04d}.csv")

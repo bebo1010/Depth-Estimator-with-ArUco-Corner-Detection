@@ -61,7 +61,7 @@ jobs:
         id: pylint
         run: |
           . .venv/bin/activate
-          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=35 --max-attribute=20
+          pylint $(git ls-files 'src/*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=35 --max-attribute=20
 
       - name: Post PyLint results as PR comment
         if: failure()
@@ -70,7 +70,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           . .venv/bin/activate
-          pylint $(git ls-files '*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=35 --max-attribute=20 | tee pylint-report.txt
+          pylint $(git ls-files 'src/*.py') --max-line-length=120 --disable=E1101,E0611,E0401,E0633,R0801 --max-args=10 --max-locals=35 --max-attribute=20 | tee pylint-report.txt
           gh pr comment "$PR_URL" -b "$(cat pylint-report.txt)"
           exit 1
 

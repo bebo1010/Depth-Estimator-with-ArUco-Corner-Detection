@@ -19,27 +19,6 @@ from src.utils import get_starting_index, setup_directories, setup_logging, save
 class OpencvUIController():
     """
     UI controller for ArUco detection application.
-
-    Functions:
-        __init__(str, float, float, Tuple[int, int]) -> None
-        set_camera_system(TwoCamerasSystem) -> None
-        start() -> None
-        _calibrate_cameras() -> None
-        _display_image(np.ndarray, np.ndarray, np.ndarray, np.ndarray, str, str) -> None
-        _draw_on_depth_image(np.ndarray, np.ndarray, Tuple[int, int]) -> np.ndarray
-        _draw_on_gray_image(np.ndarray, int, Tuple[int, int], float) -> np.ndarray
-        _get_starting_index(str) -> int
-        _handle_key_presses(int, np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]) -> bool
-        _process_and_draw_chessboard(np.ndarray, np.ndarray) -> None
-        _process_and_draw_images(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
-                                 Optional[np.ndarray] = None, Optional[np.ndarray] = None) -> None
-        _process_disparity_and_depth(np.ndarray, np.ndarray, Optional[np.ndarray] = None,
-                                     Optional[Tuple[int, int]] = None
-                                     ) -> Tuple[np.ndarray, float, float, float, Optional[float]]
-        _save_chessboard_images(np.ndarray, np.ndarray) -> None
-        _save_images(np.ndarray, np.ndarray, Optional[np.ndarray] = None, Optional[np.ndarray] = None) -> None
-        _setup_window() -> None
-        _update_window_title(bool) -> None
     """
     def __init__(self) -> None:
         """
@@ -97,11 +76,20 @@ class OpencvUIController():
         """
         Set the parameters for the UI controller.
 
-        args:
-        No arguments.
+        Parameters
+        ----------
+        system_prefix : str
+            Prefix for the camera system.
+        focal_length : float
+            Focal length of the camera.
+        baseline : float
+            Baseline distance between the cameras.
+        principal_point : Tuple[int, int]
+            Principal point of the camera.
 
-        returns:
-        No return.
+        Returns
+        -------
+        None
         """
         self.base_dir = os.path.join("Db", f"{system_prefix}_{datetime.now().strftime('%Y%m%d')}")
         left_ir_dir = os.path.join(self.base_dir, "left_ArUco_images")
@@ -125,11 +113,14 @@ class OpencvUIController():
         """
         Set the camera system for the application.
 
-        args:
-        No arguments.
+        Parameters
+        ----------
+        camera_system : TwoCamerasSystem
+            The camera system to be used.
 
-        returns:
-        No return.
+        Returns
+        -------
+        None
         """
         self.camera_system = camera_system
         self.camera_params['width'] = self.camera_system.get_width()
@@ -138,14 +129,11 @@ class OpencvUIController():
 
     def start(self) -> None:
         """
-        This method initializes the OpenCV window and enters a loop to continuously
-        capture and process images from the camera system. It handles various key
-        presses to perform actions such as saving images, toggling display options,
-        and terminating the application.
-        Args:
-        No arguments.
-        Returns:
-        No return.
+        Initialize the OpenCV window and enter a loop to continuously capture and process images.
+
+        Returns
+        -------
+        None
         """
         cv2.namedWindow("Combined View (2x2)")
 
@@ -188,8 +176,9 @@ class OpencvUIController():
         """
         Calibrate the cameras using the saved chessboard images.
 
-        Returns:
-            None.
+        Returns
+        -------
+        None
         """
         if self.image_points['left'] and self.image_points['right']:
             image_size = (self.camera_params['width'], self.camera_params['height'])
@@ -213,16 +202,24 @@ class OpencvUIController():
         """
         Display the processed images on the window.
 
-        Args:
-            left_colored (np.ndarray): Colored image of the left camera.
-            right_colored (np.ndarray): Colored image of the right camera.
-            first_depth_colormap (np.ndarray): Color-mapped first depth image.
-            second_depth_colormap (np.ndarray): Color-mapped second depth image.
-            aruco_info (str): Information about detected ArUco markers.
-            mouse_info (str): Information about mouse hover.
+        Parameters
+        ----------
+        left_colored : np.ndarray
+            Colored image of the left camera.
+        right_colored : np.ndarray
+            Colored image of the right camera.
+        first_depth_colormap : np.ndarray
+            Color-mapped first depth image.
+        second_depth_colormap : np.ndarray
+            Color-mapped second depth image.
+        aruco_info : str
+            Information about detected ArUco markers.
+        mouse_info : str
+            Information about mouse hover.
 
-        Returns:
-            None.
+        Returns
+        -------
+        None
         """
         image_width, image_height = self.matrix_view_size
 
@@ -257,15 +254,23 @@ class OpencvUIController():
         """
         Handle key presses for various actions.
 
-        Args:
-            key (int): Key code of the pressed key.
-            left_gray_image (np.ndarray): Grayscale image of the left camera.
-            right_gray_image (np.ndarray): Grayscale image of the right camera.
-            first_depth_image (Optional[np.ndarray]): First depth image.
-            second_depth_image (Optional[np.ndarray]): Second depth image.
+        Parameters
+        ----------
+        key : int
+            Key code of the pressed key.
+        left_gray_image : np.ndarray
+            Grayscale image of the left camera.
+        right_gray_image : np.ndarray
+            Grayscale image of the right camera.
+        first_depth_image : Optional[np.ndarray]
+            First depth image.
+        second_depth_image : Optional[np.ndarray]
+            Second depth image.
 
-        Returns:
-            bool: True if the application should exit, False otherwise.
+        Returns
+        -------
+        bool
+            True if the application should exit, False otherwise.
         """
         # Define actions for each key
         actions = {
@@ -295,8 +300,10 @@ class OpencvUIController():
         """
         Exit the program or switch from image mode to normal stream mode.
 
-        Returns:
-            bool: True if the application should exit, False otherwise.
+        Returns
+        -------
+        bool
+            True if the application should exit, False otherwise.
         """
         if self.display_option['image_mode']:
             self.display_option['image_mode'] = False
@@ -310,11 +317,15 @@ class OpencvUIController():
         """
         Navigate through the loaded images or switch detectors based on the current mode.
 
-        Args:
-            direction (str): Direction to navigate ('next' or 'previous').
+        Parameters
+        ----------
+        direction : str
+            Direction to navigate ('next' or 'previous').
 
-        Returns:
-            bool: Always returns False.
+        Returns
+        -------
+        bool
+            Always returns False.
         """
         if self.display_option['image_mode']:
             if direction == 'next':
@@ -336,10 +347,11 @@ class OpencvUIController():
 
     def _exit_program(self) -> None:
         """
-        Terminates the program by releasing the camera system and closing all OpenCV windows.
-        This method logs the termination event,
-        releases the camera resources,
-        and closes any OpenCV windows that are open.
+        Terminate the program by releasing the camera system and closing all OpenCV windows.
+
+        Returns
+        -------
+        None
         """
         logging.info("Program terminated by user.")
         if self.camera_system:
@@ -348,18 +360,26 @@ class OpencvUIController():
         cv2.destroyAllWindows()
         self.stop_flag = True
 
-    def _save_images(self, left_gray_image, right_gray_image, first_depth_image, second_depth_image) -> bool:
+    def _save_images(self, left_gray_image: np.ndarray, right_gray_image: np.ndarray,
+                     first_depth_image: Optional[np.ndarray], second_depth_image: Optional[np.ndarray]) -> bool:
         """
-        Saves the provided images based on the current display option.
-        If the system is in calibration mode, the method saves chessboard images.
-        Otherwise, it saves the provided images with a specified prefix and increments the image index.
-        Args:
-            left_gray_image (numpy.ndarray): The left grayscale image to be saved.
-            right_gray_image (numpy.ndarray): The right grayscale image to be saved.
-            first_depth_image (numpy.ndarray): The first depth image to be saved.
-            second_depth_image (numpy.ndarray): The second depth image to be saved.
-        Returns:
-            bool: Always returns False.
+        Save the provided images based on the current display option.
+
+        Parameters
+        ----------
+        left_gray_image : np.ndarray
+            Grayscale image of the left camera.
+        right_gray_image : np.ndarray
+            Grayscale image of the right camera.
+        first_depth_image : Optional[np.ndarray]
+            First depth image.
+        second_depth_image : Optional[np.ndarray]
+            Second depth image.
+
+        Returns
+        -------
+        bool
+            Always returns False.
         """
         if self.display_option['image_mode']:
             logging.warning("Cannot save images while in image mode.")
@@ -401,15 +421,20 @@ class OpencvUIController():
 
         return False
 
-    def _toggle_option(self, option) -> bool:
+    def _toggle_option(self, option: str) -> bool:
         """
-        Toggles the state of a given display option and updates the window title.
-        Args:
-            option (str): The display option to toggle.
-        Returns:
-            bool: Always returns False.
-        """
+        Toggle the state of a given display option and update the window title.
 
+        Parameters
+        ----------
+        option : str
+            The display option to toggle.
+
+        Returns
+        -------
+        bool
+            Always returns False.
+        """
         self.display_option[option] = not self.display_option[option]
         self._update_window_title()
 
@@ -417,12 +442,12 @@ class OpencvUIController():
 
     def _toggle_calibration_mode(self) -> bool:
         """
-        Toggles the calibration mode for the UI.
-        This method switches the 'calibration_mode' in the display options.
-        If 'calibration_mode' is enabled, it disables 'freeze_mode'.
-        If 'calibration_mode' is disabled, it triggers the camera calibration process.
-        Returns:
-            bool: Always returns False.
+        Toggle the calibration mode for the UI.
+
+        Returns
+        -------
+        bool
+            Always returns False.
         """
         if not self.camera_system:
             logging.warning("Calibration mode cannot be activated without a camera system.")
@@ -438,14 +463,13 @@ class OpencvUIController():
 
     def _toggle_freeze_mode(self) -> bool:
         """
-        Toggles the freeze mode in the display options.
-        This method switches the 'freeze_mode' flag in the display_option dictionary
-        to its opposite state. If 'freeze_mode' is enabled, it also disables the
-        'calibration_mode'.
-        Returns:
-            bool: Always returns False.
-        """
+        Toggle the freeze mode in the display options.
 
+        Returns
+        -------
+        bool
+            Always returns False.
+        """
         self.display_option['freeze_mode'] = not self.display_option['freeze_mode']
         if self.display_option['freeze_mode']:
             self.display_option['calibration_mode'] = False
@@ -456,12 +480,16 @@ class OpencvUIController():
         """
         Process and draw chessboard corners on the images in calibration mode.
 
-        Args:
-            left_gray_image (np.ndarray): Grayscale image of the left camera.
-            right_gray_image (np.ndarray): Grayscale image of the right camera.
+        Parameters
+        ----------
+        left_gray_image : np.ndarray
+            Grayscale image of the left camera.
+        right_gray_image : np.ndarray
+            Grayscale image of the right camera.
 
-        Returns:
-            None.
+        Returns
+        -------
+        None
         """
         # Define the scale factor
         scale_factor = 2
@@ -505,17 +533,26 @@ class OpencvUIController():
         """
         Process and draw on the images.
 
-        Args:
-            left_gray_image (np.ndarray): Grayscale image of the left camera.
-            right_gray_image (np.ndarray): Grayscale image of the right camera.
-            matching_ids_result (np.ndarray): Detected marker IDs.
-            matching_corners_left (np.ndarray): Detected corner points of the left image.
-            matching_corners_right (np.ndarray): Detected corner points of the right image.
-            first_depth_image (Optional[np.ndarray]): First depth image.
-            second_depth_image (Optional[np.ndarray]): Second depth image.
+        Parameters
+        ----------
+        left_gray_image : np.ndarray
+            Grayscale image of the left camera.
+        right_gray_image : np.ndarray
+            Grayscale image of the right camera.
+        matching_ids_result : np.ndarray
+            Detected marker IDs.
+        matching_corners_left : np.ndarray
+            Detected corner points of the left image.
+        matching_corners_right : np.ndarray
+            Detected corner points of the right image.
+        first_depth_image : Optional[np.ndarray]
+            First depth image.
+        second_depth_image : Optional[np.ndarray]
+            Second depth image.
 
-        Returns:
-            None.
+        Returns
+        -------
+        None
         """
         left_colored = cv2.cvtColor(left_gray_image, cv2.COLOR_GRAY2BGR)
         right_colored = cv2.cvtColor(right_gray_image, cv2.COLOR_GRAY2BGR)
@@ -595,22 +632,25 @@ class OpencvUIController():
 
         Optionally include depth from depth image.
 
-        Args:
-            matching_corners_left (np.ndarray): Corner points of the left image.
-            matching_corners_right (np.ndarray): Corner points of the right image.
-            depth_image (Optional[np.ndarray]): Depth image for calculating depth from image (optional).
+        Parameters
+        ----------
+        matching_corners_left : np.ndarray
+            Corner points of the left image.
+        matching_corners_right : np.ndarray
+            Corner points of the right image.
+        depth_image : Optional[np.ndarray]
+            Depth image for calculating depth from image (optional).
 
-        Returns:
-            Tuple[np.ndarray, float, float,
-                np.ndarray, Optional[np.ndarray],
-                Optional[np.ndarray], Optional[np.ndarray]]:
-                - Disparities between matching corners.
-                - Mean of disparities.
-                - Variance of disparities.
-                - Calculated depth per corner in mm.
-                - Depths at the 4 corner points from depth image (if provided).
-                - 3D coordinates from estimated depth.
-                - 3D coordinates from depth image (if provided).
+        Returns
+        -------
+        Tuple[np.ndarray, float, float, np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]
+            - Disparities between matching corners.
+            - Mean of disparities.
+            - Variance of disparities.
+            - Calculated depth per corner in mm.
+            - Depths at the 4 corner points from depth image (if provided).
+            - 3D coordinates from estimated depth.
+            - 3D coordinates from depth image (if provided).
         """
         disparities = np.abs(matching_corners_left[:, 0] - matching_corners_right[:, 0])
         mean_disparity = np.mean(disparities)
@@ -646,12 +686,16 @@ class OpencvUIController():
         """
         Save chessboard images to disk and store image points for calibration.
 
-        Args:
-            left_gray_image (np.ndarray): Grayscale image of the left camera.
-            right_gray_image (np.ndarray): Grayscale image of the right camera.
+        Parameters
+        ----------
+        left_gray_image : np.ndarray
+            Grayscale image of the left camera.
+        right_gray_image : np.ndarray
+            Grayscale image of the right camera.
 
-        Returns:
-            None.
+        Returns
+        -------
+        None
         """
         ret_left, corners_left = self.chessboard_calibrator.detect_chessboard_corners(left_gray_image)
         ret_right, corners_right = self.chessboard_calibrator.detect_chessboard_corners(right_gray_image)
@@ -668,11 +712,9 @@ class OpencvUIController():
         """
         Setup OpenCV window and set the mouse callback.
 
-        args:
-        No arguments.
-
-        returns:
-        No return.
+        Returns
+        -------
+        None
         """
         def _mouse_callback(event, x, y, _flags, _param):
             """Update the mouse position."""
@@ -693,6 +735,15 @@ class OpencvUIController():
     def _update_window_title(self, setup_name: str = "") -> None:
         """
         Update the window title with the current detector name if epipolar lines are shown.
+
+        Parameters
+        ----------
+        setup_name : str, optional
+            Name of the setup (default is "").
+
+        Returns
+        -------
+        None
         """
         title = "Combined View (2x2)"
         if setup_name:
@@ -719,8 +770,10 @@ class OpencvUIController():
         """
         Load images from a selected directory.
 
-        Returns:
-            bool: Always returns False.
+        Returns
+        -------
+        bool
+            Always returns False.
         """
         _ = QApplication([])
         selected_dir = QFileDialog.getExistingDirectory(None, "Select Directory", "Db/")
@@ -757,12 +810,13 @@ class OpencvUIController():
 
         return False
 
-    def _display_loaded_images(self):
+    def _display_loaded_images(self) -> None:
         """
         Display the loaded images.
 
-        Returns:
-            None.
+        Returns
+        -------
+        None
         """
         if not hasattr(self, 'loaded_images') or not self.loaded_images:
             return

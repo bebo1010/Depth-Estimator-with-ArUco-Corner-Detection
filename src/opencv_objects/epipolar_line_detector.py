@@ -13,14 +13,6 @@ import numpy as np
 class EpipolarLineDetector:
     """
     A class to detect epipolar lines using OpenCV.
-
-    Methods
-    -------
-    set_feature_detector(detector):
-        Sets the feature detector to be used.
-
-    compute_epilines(left_image, right_image, points, fundamental_matrix):
-        Detects features and computes the epipolar lines for the given points.
     """
 
     def __init__(self):
@@ -89,15 +81,15 @@ class EpipolarLineDetector:
 
         For example, you can pass in an instance of cv2.SIFT() or cv2.ORB().
 
-        Example
-        -------
-        >>> detector = cv2.SIFT_create()
-        >>> obj.set_feature_detector(detector)
-
         Parameters
         ----------
         detector : cv2.Feature2D
             The feature detector to be used.
+
+        Example
+        -------
+        >>> detector = cv2.SIFT_create()
+        >>> obj.set_feature_detector(detector)
         """
         self.detector = detector
         logging.info("Feature detector set to: %s", type(detector).__name__)
@@ -157,17 +149,15 @@ class EpipolarLineDetector:
 
         Parameters
         ----------
-        left_image : numpy.ndarray
+        left_image : np.ndarray
             The left input image in which to detect features.
-        right_image : numpy.ndarray
+        right_image : np.ndarray
             The right input image in which to detect features.
 
         Returns
         -------
-        left_image_with_lines : numpy.ndarray
-            The left image with epipolar lines drawn.
-        right_image_with_lines : numpy.ndarray
-            The right image with epipolar lines drawn.
+        Tuple[np.ndarray, np.ndarray]
+            The left image with epipolar lines drawn and the right image with epipolar lines drawn.
         """
         if self.detector is None:
             raise ValueError("Feature detector is not set. Use set_feature_detector method to set it.")
@@ -238,21 +228,19 @@ class EpipolarLineDetector:
 
         Parameters
         ----------
-        left_image : numpy.ndarray
+        left_image : np.ndarray
             The left input image.
-        right_image : numpy.ndarray
+        right_image : np.ndarray
             The right input image.
-        corners_left : numpy.ndarray
+        corners_left : np.ndarray
             Corner points from the left image.
-        corners_right : numpy.ndarray
+        corners_right : np.ndarray
             Corner points from the right image.
 
         Returns
         -------
-        left_image_with_lines : numpy.ndarray
-            The left image with epipolar lines drawn.
-        right_image_with_lines : numpy.ndarray
-            The right image with epipolar lines drawn.
+        Tuple[np.ndarray, np.ndarray]
+            The left image with epipolar lines drawn and the right image with epipolar lines drawn.
         """
         logging.info("Computing epilines from corners.")
         # Ensure points are in the correct shape and type
@@ -277,7 +265,7 @@ class EpipolarLineDetector:
 
         Parameters
         ----------
-        epilines : numpy.ndarray
+        epilines : np.ndarray
             The epipolar lines to be checked.
 
         Returns
@@ -291,7 +279,7 @@ class EpipolarLineDetector:
         # Check if more than 50% of the lines are horizontal
         return horizontal_lines > 0.5 * len(epilines)
 
-    def _save_fundamental_matrix(self):
+    def _save_fundamental_matrix(self) -> None:
         """
         Saves the fundamental matrix and homography matrices to a JSON file with formatted text.
         """
@@ -319,9 +307,9 @@ class EpipolarLineDetector:
 
         Parameters
         ----------
-        points_left : numpy.ndarray
+        points_left : np.ndarray
             Points from the left image.
-        points_right : numpy.ndarray
+        points_right : np.ndarray
             Points from the right image.
         image_shape : Tuple[int, int]
             Shape of the image.
@@ -339,16 +327,16 @@ class EpipolarLineDetector:
 
         Parameters
         ----------
-        image : numpy.ndarray
+        image : np.ndarray
             The image on which to draw the epipolar lines.
-        epilines : numpy.ndarray
+        epilines : np.ndarray
             The epipolar lines to be drawn.
-        points : numpy.ndarray
+        points : np.ndarray
             Points corresponding to the epipolar lines.
 
         Returns
         -------
-        image_with_lines : numpy.ndarray
+        np.ndarray
             The image with epipolar lines drawn.
         """
         logging.info("Drawing epipolar lines on the image.")

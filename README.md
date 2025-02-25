@@ -15,7 +15,7 @@
 1. Install Python 3.8 or higher.
 2. Install the required packages:
     ```bash
-    pip install .
+    pip install -e .
     ```
 3. Install the PySpin library:
     - Download the appropriate PySpin wheel file from [here](https://www.flir.com/products/spinnaker-sdk/)
@@ -100,6 +100,23 @@
 ## Goal
 - Allow loading back calibration parameters.
 - Add rectifying image and show epipolar lines again.
+
+## Auto Document Generating
+
+1. Environment Setup
+    ```bash
+    pip install -e .[doc]
+    ```
+
+2. Build the html pages
+    ```bash
+    sphinx-build -b html docs docs/_build/html
+    ```
+
+3. Run local documentation server
+    ```bash
+    sphinx-autobuild docs docs/_build/html
+    ```
 
 ## Note
 > [!NOTE]

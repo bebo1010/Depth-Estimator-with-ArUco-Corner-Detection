@@ -11,25 +11,21 @@ from .two_cameras_system import TwoCamerasSystem
 class DualFlirSystem(TwoCamerasSystem):
     """
     Dual FLIR camera system, inherited from TwoCamerasSystem.
-
-    Functions:
-        __init__(FlirCameraSystem, FlirCameraSystem) -> None
-        get_grayscale_images() -> Tuple[bool, np.ndarray, np.ndarray]
-        get_depth_images() -> Tuple[bool, np.ndarray]
-        get_width() -> int
-        get_height() -> int
-        release() -> bool
     """
     def __init__(self, camera1: FlirCameraSystem, camera2: FlirCameraSystem) -> None:
         """
         Initialize dual FLIR camera system.
 
-        args:
-            camera1 (FlirCameraSystem): First FLIR camera system.
-            camera2 (FlirCameraSystem): Second FLIR camera system.
+        Parameters
+        ----------
+        camera1 : FlirCameraSystem
+            First FLIR camera system.
+        camera2 : FlirCameraSystem
+            Second FLIR camera system.
 
-        returns:
-        No return.
+        Returns
+        -------
+        None
         """
         super().__init__()
 
@@ -48,14 +44,12 @@ class DualFlirSystem(TwoCamerasSystem):
         """
         Get grayscale images for both cameras.
 
-        args:
-        No arguments.
-
-        returns:
-        Tuple[bool, np.ndarray, np.ndarray]:
+        Returns
+        -------
+        Tuple[bool, np.ndarray, np.ndarray]
             - bool: Whether images grabbing is successful or not.
-            - np.ndarray: grayscale image for left camera.
-            - np.ndarray: grayscale image for right camera.
+            - np.ndarray: Grayscale image for left camera.
+            - np.ndarray: Grayscale image for right camera.
         """
         success1, left_image1 = self.camera1.get_grayscale_image()
         success2, left_image2 = self.camera2.get_grayscale_image()
@@ -67,14 +61,12 @@ class DualFlirSystem(TwoCamerasSystem):
         """
         Get depth images for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        Tuple[bool, np.ndarray]:
+        Returns
+        -------
+        Tuple[bool, np.ndarray, np.ndarray]
             - bool: Whether depth image grabbing is successful or not.
-            - np.ndarray: first depth grayscale image.
-            - np.ndarray: second depth grayscale image.
+            - np.ndarray: First depth grayscale image.
+            - np.ndarray: Second depth grayscale image.
         """
         success1, depth_image1 = self.camera1.get_depth_image()
         success2, depth_image2 = self.camera2.get_depth_image()
@@ -86,12 +78,10 @@ class DualFlirSystem(TwoCamerasSystem):
         """
         Get width for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        int:
-            - int: Width of the camera system.
+        Returns
+        -------
+        int
+            Width of the camera system.
         """
         return self.width
 
@@ -99,12 +89,10 @@ class DualFlirSystem(TwoCamerasSystem):
         """
         Get height for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        int:
-            - int: Height of the camera system.
+        Returns
+        -------
+        int
+            Height of the camera system.
         """
         return self.height
 
@@ -112,12 +100,10 @@ class DualFlirSystem(TwoCamerasSystem):
         """
         Release the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        bool:
-            - bool: Whether releasing is successful or not.
+        Returns
+        -------
+        bool
+            Whether releasing is successful or not.
         """
         self.camera1.release()
         self.camera2.release()

@@ -12,27 +12,23 @@ from .two_cameras_system import TwoCamerasSystem
 class RealsenseCameraSystem(TwoCamerasSystem):
     """
     Realsense camera system, inherited from TwoCamerasSystem.
-
-    Functions:
-        __init__(int, int, int) -> None
-        get_grayscale_images() -> Tuple[bool, np.ndarray, np.ndarray]
-        get_depth_images() -> Tuple[bool, np.ndarray, np.ndarray]
-        get_width() -> int
-        get_height() -> int
-        release() -> bool
     """
     def __init__(self, width: int, height: int, serial_number: Optional[str] = None) -> None:
         """
         Initialize realsense camera system.
 
-        args:
-            width (int): width of realsense camera stream.
-            height (int): height of realsense camera stream.
-            serial_number (str, optional): serial number of the realsense camera. \
-                Connect to the first realsense camera if not provided.
+        Parameters
+        ----------
+        width : int
+            Width of realsense camera stream.
+        height : int
+            Height of realsense camera stream.
+        serial_number : str, optional
+            Serial number of the realsense camera. Connect to the first realsense camera if not provided.
 
-        returns:
-        No return.
+        Returns
+        -------
+        None
         """
         super().__init__()
         # Configure the RealSense pipeline
@@ -62,16 +58,14 @@ class RealsenseCameraSystem(TwoCamerasSystem):
 
     def get_grayscale_images(self) -> Tuple[bool, np.ndarray, np.ndarray]:
         """
-        Get grayscale images for both camera.
+        Get grayscale images for both cameras.
 
-        args:
-        No arguments.
-
-        returns:
-        Tuple[bool, np.ndarray, np.ndarray]:
+        Returns
+        -------
+        Tuple[bool, np.ndarray, np.ndarray]
             - bool: Whether images grabbing is successful or not.
-            - np.ndarray: left grayscale image (or None if failed).
-            - np.ndarray: right grayscale image (or None if failed).
+            - np.ndarray: Left grayscale image (or None if failed).
+            - np.ndarray: Right grayscale image (or None if failed).
         """
         logging.info("Grabbing grayscale images from Realsense camera")
         frames = self.pipeline.wait_for_frames()
@@ -94,14 +88,12 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         """
         Get depth images for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        Tuple[bool, np.ndarray, np.ndarray]:
+        Returns
+        -------
+        Tuple[bool, np.ndarray, np.ndarray]
             - bool: Whether depth image grabbing is successful or not.
-            - np.ndarray: first depth grayscale image.
-            - np.ndarray: second depth grayscale image.
+            - np.ndarray: First depth grayscale image.
+            - np.ndarray: Second depth grayscale image.
         """
         logging.info("Grabbing depth image from Realsense camera")
         frames = self.pipeline.wait_for_frames()
@@ -118,12 +110,10 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         """
         Get width for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        int:
-            - int: Width of the camera system.
+        Returns
+        -------
+        int
+            Width of the camera system.
         """
         return self.width
 
@@ -131,12 +121,10 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         """
         Get height for the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        int:
-            - int: Height of the camera system.
+        Returns
+        -------
+        int
+            Height of the camera system.
         """
         return self.height
 
@@ -144,12 +132,10 @@ class RealsenseCameraSystem(TwoCamerasSystem):
         """
         Release the camera system.
 
-        args:
-        No arguments.
-
-        returns:
-        bool:
-            - bool: Whether releasing is successful or not.
+        Returns
+        -------
+        bool
+            Whether releasing is successful or not.
         """
         logging.info("Releasing the Realsense camera system")
         self.pipeline.stop()
