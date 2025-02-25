@@ -98,9 +98,9 @@ if __name__ == "__main__":
     try:
         import PySpin  # pylint: disable=unused-import
 
-        FOCAL_LENGTH = 1060  # in pixels
+        FOCAL_LENGTH = 1075  # in pixels
         BASELINE = 80  # in mm
-        PRINCIPAL_POINT = (640, 360)  # unchecked in pixels
+        PRINCIPAL_POINT = (945.68, 548.12)  # unchecked in pixels
 
         CONFIG = "./src/camera_config/GH3_camera_config.yaml"
         SN1 = "21091478"
