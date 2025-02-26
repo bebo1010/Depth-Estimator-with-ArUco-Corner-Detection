@@ -107,10 +107,24 @@
     ```bash
     pip install -e .[doc]
     ```
+    - Generate ReStructured text files (One time only)
+    ```bash
+    sphinx-apidoc -o . ../src
+    ```
 
-2. Build the html pages
+2. Build the document pages
+    - HTML
     ```bash
     sphinx-build -b html docs docs/_build/html
+    ```
+
+    - PDF file
+    1. Install [Strawberry Perl](https://strawberryperl.com/) manually
+    2. Install [MikTex](https://miktex.org/download)
+    3. Check updates and install `latexmk` in `Miktex Console`
+    ```bash
+    cd docs
+    make.bat latexpdf
     ```
 
 3. Run local documentation server
