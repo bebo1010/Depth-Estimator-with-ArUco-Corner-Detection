@@ -65,7 +65,7 @@
         - [x] Mouse hover 3D position
 - [ ] Chessboard calibration for stereo camera
     - [x] Calibration and save image
-    - [ ] Load back the parameters and rectify the images
+    - [x] Load back the parameters and rectify the images
     - [ ] (Optional) Show reprojection error per image
 - [x] Auto rectification with fundamental matrix
 - [x] Saving the images

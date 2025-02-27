@@ -14,7 +14,7 @@ from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCa
 from src.camera_objects import TwoCamerasSystem
 from src.utils import get_starting_index, setup_directories, setup_logging, save_images, draw_lines, \
     apply_colormap, draw_aruco_rectangle, load_images_from_directory, update_aruco_info, \
-    save_setup_info, load_setup_info, save_aruco_info_to_csv
+    save_setup_info, load_setup_info, save_aruco_info_to_csv, load_camera_parameters
 
 class OpencvUIController():
     """
@@ -67,6 +67,13 @@ class OpencvUIController():
 
         self.loaded_images = []
         self.loaded_image_index = 0
+
+        self.undistort_maps = {
+            "mapx_left": None,
+            "mapy_left": None,
+            "mapx_right": None,
+            "mapy_right": None
+        }
 
     def set_parameters(self,
                        system_prefix: str,
@@ -127,6 +134,15 @@ class OpencvUIController():
         self.camera_params['height'] = self.camera_system.get_height()
         save_setup_info(self.base_dir, self.camera_params)
 
+        parameter_dir = os.path.join("Db", f"{self.camera_params['system_prefix']}_calibration_parameter")
+        success, (mapx_left, mapy_left), (mapx_right, mapy_right) = \
+            load_camera_parameters(parameter_dir, self.camera_params['width'], self.camera_params['height'])
+        if success:
+            self.undistort_maps['mapx_left'] = mapx_left
+            self.undistort_maps['mapy_left'] = mapy_left
+            self.undistort_maps['mapx_right'] = mapx_right
+            self.undistort_maps['mapy_right'] = mapy_right
+
     def start(self) -> None:
         """
         Initialize the OpenCV window and enter a loop to continuously capture and process images.
@@ -149,6 +165,12 @@ class OpencvUIController():
                     _, first_depth_image, second_depth_image = self.camera_system.get_depth_images()
                     if not success:
                         continue
+
+                if np.all([map is not None for map in self.undistort_maps.values()]):
+                    left_gray_image = cv2.remap(left_gray_image, self.undistort_maps['mapx_left'],
+                                                self.undistort_maps['mapy_left'], cv2.INTER_LINEAR)
+                    right_gray_image = cv2.remap(right_gray_image, self.undistort_maps['mapx_right'],
+                                                 self.undistort_maps['mapy_right'], cv2.INTER_LINEAR)
 
                 if self.epipolar_detector.homography_ready:
                     left_gray_image = cv2.warpPerspective(left_gray_image, self.epipolar_detector.homography_left,
