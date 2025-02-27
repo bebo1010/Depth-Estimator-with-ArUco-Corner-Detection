@@ -68,13 +68,6 @@ class OpencvUIController():
         self.loaded_images = []
         self.loaded_image_index = 0
 
-        self.undistort_maps = {
-            "mapx_left": None,
-            "mapy_left": None,
-            "mapx_right": None,
-            "mapy_right": None
-        }
-
     def set_parameters(self,
                        system_prefix: str,
                        focal_length: float,
@@ -135,13 +128,12 @@ class OpencvUIController():
         save_setup_info(self.base_dir, self.camera_params)
 
         parameter_dir = os.path.join("Db", f"{self.camera_params['system_prefix']}_calibration_parameter")
-        success, (mapx_left, mapy_left), (mapx_right, mapy_right) = \
-            load_camera_parameters(parameter_dir, self.camera_params['width'], self.camera_params['height'])
+        success, stereo_params = \
+            load_camera_parameters(parameter_dir)
         if success:
-            self.undistort_maps['mapx_left'] = mapx_left
-            self.undistort_maps['mapy_left'] = mapy_left
-            self.undistort_maps['mapx_right'] = mapx_right
-            self.undistort_maps['mapy_right'] = mapy_right
+            self.chessboard_calibrator.stereo_camera_parameters = stereo_params
+            self.chessboard_calibrator.initialize_rectification_maps((self.camera_params['width'],
+                                                                      self.camera_params['height']))
 
     def start(self) -> None:
         """
@@ -166,17 +158,17 @@ class OpencvUIController():
                     if not success:
                         continue
 
-                if np.all([map is not None for map in self.undistort_maps.values()]):
-                    left_gray_image = cv2.remap(left_gray_image, self.undistort_maps['mapx_left'],
-                                                self.undistort_maps['mapy_left'], cv2.INTER_LINEAR)
-                    right_gray_image = cv2.remap(right_gray_image, self.undistort_maps['mapx_right'],
-                                                 self.undistort_maps['mapy_right'], cv2.INTER_LINEAR)
+                    if self.chessboard_calibrator.rectification_ready:
+                        left_gray_image, right_gray_image = \
+                            self.chessboard_calibrator.rectify_images(left_gray_image, right_gray_image)
 
-                if self.epipolar_detector.homography_ready:
-                    left_gray_image = cv2.warpPerspective(left_gray_image, self.epipolar_detector.homography_left,
-                                                          (left_gray_image.shape[1], left_gray_image.shape[0]))
-                    right_gray_image = cv2.warpPerspective(right_gray_image, self.epipolar_detector.homography_right,
-                                                           (right_gray_image.shape[1], right_gray_image.shape[0]))
+                    elif self.epipolar_detector.homography_ready:
+                        left_gray_image = cv2.warpPerspective(left_gray_image,
+                                                              self.epipolar_detector.homography_left,
+                                                            (left_gray_image.shape[1], left_gray_image.shape[0]))
+                        right_gray_image = cv2.warpPerspective(right_gray_image,
+                                                               self.epipolar_detector.homography_right,
+                                                            (right_gray_image.shape[1], right_gray_image.shape[0]))
 
                 if self.display_option['calibration_mode']:
                     self._process_and_draw_chessboard(left_gray_image, right_gray_image)

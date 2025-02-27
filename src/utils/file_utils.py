@@ -310,10 +310,7 @@ def save_aruco_info_to_csv(base_dir: str, image_index: int, aruco_data: list) ->
                          "RealSense 3D X", "RealSense 3D Y", "RealSense 3D Z"])
         writer.writerows(aruco_data)
 
-def load_camera_parameters(parameter_dir: str,
-                           width: int,
-                           height: int
-                           ) -> Tuple[bool, Optional[np.ndarray], Optional[np.ndarray]]:
+def load_camera_parameters(parameter_dir: str) -> Tuple[bool, Optional[dict]]:
     """
     Load camera parameters from the specified directory.
 
@@ -321,45 +318,23 @@ def load_camera_parameters(parameter_dir: str,
     ----------
     parameter_dir : str
         Directory containing the camera parameters.
-    width : int
-        Width of the camera images.
-    height : int
-        Height of the camera images.
 
     Returns
     -------
-    Tuple[bool, Optional[np.ndarray], Optional[np.ndarray]]
+    Tuple[bool, Optional[dict]]
         - True if loading is successful, False otherwise.
-        - Undistortion map for the left camera.
-        - Undistortion map for the right camera.
+        - Dictionary containing the camera parameters if successful, None otherwise.
     """
     try:
         # Load parameters from JSON file
         params_path = os.path.join(parameter_dir, "stereo_camera_parameters.json")
+        params = None
+
         with open(params_path, 'r', encoding="utf-8") as file:
             params = json.load(file)
 
-        # Initialize undistortion maps
-        mapx_left, mapy_left = cv2.initUndistortRectifyMap(
-            np.array(params['camera_matrix_left']),
-            np.array(params['distortion_coefficients_left']),
-            np.eye(3),
-            np.array(params['camera_matrix_left']),
-            (width, height),
-            cv2.CV_32FC1
-        )
+        return True, params
 
-        mapx_right, mapy_right = cv2.initUndistortRectifyMap(
-            np.array(params['camera_matrix_right']),
-            np.array(params['distortion_coefficients_right']),
-            np.eye(3),
-            np.array(params['camera_matrix_right']),
-            (width, height),
-            cv2.CV_32FC1
-        )
-
-        logging.info("Camera parameters loaded successfully from %s", parameter_dir)
-        return True, (mapx_left, mapy_left), (mapx_right, mapy_right)
     except FileNotFoundError:
         logging.error("Calibration parameter file %s does not exist", params_path)
-        return False, None, None
+        return False, None
