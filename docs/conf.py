@@ -38,11 +38,9 @@ latex_elements = {
     \usepackage{geometry}
     \geometry{a4paper, margin=2.5cm}  % 調整邊距
     \usepackage[breakall]{truncate}  % 自動斷行
-    \onecolumn  % 強制單列模式
     \usepackage{longtable}  % 支援長表
     \usepackage{booktabs}  % 改進表格樣式（可選）
-    \usepackage{makeidx}
-    \usepackage[columns=1]{idxlayout}
+    \usepackage[columns=1]{idxlayout}\makeindex
     ''',
 }
 
