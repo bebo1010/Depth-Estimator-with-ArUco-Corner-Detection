@@ -2,6 +2,8 @@
 Module for calibrating cameras using a chessboard pattern.
 """
 
+import os
+from datetime import datetime
 import logging
 from typing import Tuple, List, Dict, Any
 
@@ -381,31 +383,44 @@ class ChessboardCalibrator():
         logging.info("Stereo images rectified.")
         return left_rectified, right_rectified
 
-    def save_parameters(self, db_path: str = "./") -> None:
+    def save_parameters(self, db_path: str = "./", system_prefix = "GH3") -> None:
+
         """
         Save the calibration parameters to JSON files.
 
         Parameters
         ----------
         db_path : str, optional
-            Directory path to save the JSON files.
+            Directory path to save the JSON files. Default is the current directory.
+
+        system_prefix : str, optional
+            Prefix for the directory name where the JSON files will be saved. Default is "GH3".
+
+        Raises
+        ------
+        TypeError
+            If an object in the calibration parameters is not JSON serializable.
         """
-        left_parameter_save_path = db_path + "/left_camera_parameters.json"
-        right_parameter_save_path = db_path + "/right_camera_parameters.json"
-        stereo_parameter_save_path = db_path + "/stereo_camera_parameters.json"
+        dir_path = os.path.join(db_path, f"{system_prefix}_calibration_parameter_{datetime.now().strftime('%Y%m%d')}")
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        left_parameter_save_path = os.path.join(dir_path, "left_camera_parameters.json")
+        right_parameter_save_path = os.path.join(dir_path, "right_camera_parameters.json")
+        stereo_parameter_save_path = os.path.join(dir_path, "stereo_camera_parameters.json")
 
         def serialize_numpy(obj: Any) -> Any:
             if isinstance(obj, np.ndarray):
                 return obj.tolist()
             raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
-        with open(left_parameter_save_path, "w", encoding="UTF-8") as left_file:
+        with open(left_parameter_save_path, "w", encoding="utf-8") as left_file:
             json.dump(self._left_calibration_parameters, left_file, default=serialize_numpy)
 
-        with open(right_parameter_save_path, "w", encoding="UTF-8") as right_file:
+        with open(right_parameter_save_path, "w", encoding="utf-8") as right_file:
             json.dump(self._right_calibration_parameters, right_file, default=serialize_numpy)
 
-        with open(stereo_parameter_save_path, "w", encoding="UTF-8") as stereo_file:
+        with open(stereo_parameter_save_path, "w", encoding="utf-8") as stereo_file:
             json.dump(self._stereo_calibration_parameters, stereo_file, default=serialize_numpy)
 
     def _generate_object_points(self, num_images: int) -> List[np.ndarray]:
