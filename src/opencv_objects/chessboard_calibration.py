@@ -27,6 +27,12 @@ class ChessboardCalibrator():
         self._right_calibration_parameters: Dict[str, Any] = {}
         self._stereo_calibration_parameters: Dict[str, Any] = {}
 
+        self.rectify_undistort_maps: Dict[str, Any] = {
+            "mapx_left": None,
+            "mapy_left": None,
+            "mapx_right": None,
+            "mapy_right": None
+        }
         logging.info("ChessboardCalibrator initialized with pattern size %s and square size mm %s.",
                         pattern_size, square_size_mm)
 
@@ -359,23 +365,14 @@ class ChessboardCalibrator():
             Rectified images from the left and right cameras.
         """
         logging.info("Rectifying stereo images.")
-        left_map1, left_map2 = cv2.initUndistortRectifyMap(
-            self._stereo_calibration_parameters["camera_matrix_left"],
-            self._stereo_calibration_parameters["distortion_coefficients_left"],
-            self._stereo_calibration_parameters["left_rectified_rotation_matrix"],
-            self._stereo_calibration_parameters["left_projection_matrix"],
-            left_image.shape[:2][::-1],
-            cv2.CV_16SC2
-        )
+        if not np.all([map is not None for map in self.rectify_undistort_maps.values()]):
+            self._initialize_rectification_maps((left_image.shape[1], left_image.shape[0]))
 
-        right_map1, right_map2 = cv2.initUndistortRectifyMap(
-            self._stereo_calibration_parameters["camera_matrix_right"],
-            self._stereo_calibration_parameters["distortion_coefficients_right"],
-            self._stereo_calibration_parameters["right_rectified_rotation_matrix"],
-            self._stereo_calibration_parameters["right_projection_matrix"],
-            right_image.shape[:2][::-1],
-            cv2.CV_16SC2
-        )
+        left_map1 = self.rectify_undistort_maps["mapx_left"]
+        left_map2 = self.rectify_undistort_maps["mapy_left"]
+
+        right_map1 = self.rectify_undistort_maps["mapx_right"]
+        right_map2 = self.rectify_undistort_maps["mapy_right"]
 
         left_rectified = cv2.remap(left_image, left_map1, left_map2, cv2.INTER_LINEAR)
         right_rectified = cv2.remap(right_image, right_map1, right_map2, cv2.INTER_LINEAR)
@@ -440,3 +437,43 @@ class ChessboardCalibrator():
         objp = np.zeros((self.pattern_size[0] * self.pattern_size[1], 3), np.float32)
         objp[:, :2] = np.mgrid[0:self.pattern_size[0], 0:self.pattern_size[1]].T.reshape(-1, 2)
         return [objp for _ in range(num_images)]
+
+    def _initialize_rectification_maps(self, image_size: Tuple[int, int]) -> None:
+        """
+        Initialize rectification maps for the stereo camera setup.
+
+        Parameters
+        ----------
+        image_size : Tuple[int, int]
+            Size of the image.
+        """
+        # Note: Currently untested
+        if len(self._stereo_calibration_parameters.keys()) > 0:
+            left_map1, left_map2 = cv2.initUndistortRectifyMap(
+                self._stereo_calibration_parameters["camera_matrix_left"],
+                self._stereo_calibration_parameters["distortion_coefficients_left"],
+                self._stereo_calibration_parameters["left_rectified_rotation_matrix"],
+                self._stereo_calibration_parameters["left_projection_matrix"],
+                image_size,
+                cv2.CV_32FC1
+            )
+
+            right_map1, right_map2 = cv2.initUndistortRectifyMap(
+                self._stereo_calibration_parameters["camera_matrix_right"],
+                self._stereo_calibration_parameters["distortion_coefficients_right"],
+                self._stereo_calibration_parameters["right_rectified_rotation_matrix"],
+                self._stereo_calibration_parameters["right_projection_matrix"],
+                image_size,
+                cv2.CV_32FC1
+            )
+
+            self.rectify_undistort_maps = {
+                "mapx_left": left_map1,
+                "mapy_left": left_map2,
+                "mapx_right": right_map1,
+                "mapy_right": right_map2
+            }
+            logging.info("Rectification maps initialized.")
+            return
+
+        logging.error("Stereo camera parameters not set. Cannot initialize rectification maps.")

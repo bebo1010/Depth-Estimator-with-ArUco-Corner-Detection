@@ -159,7 +159,7 @@ class TestChessboardCalibrator(unittest.TestCase):
         """
         left_image = np.random.rand(480, 640, 3).astype(np.uint8)
         right_image = np.random.rand(480, 640, 3).astype(np.uint8)
-        with self.assertRaises(KeyError):
+        with self.assertRaises(cv2.error):
             self.calibrator.rectify_images(left_image, right_image)
 
     def _generate_image_points(self, pattern_size: Tuple[int, int], num_images: int) -> List[np.ndarray]:
