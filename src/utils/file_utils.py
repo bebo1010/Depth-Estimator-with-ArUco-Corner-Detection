@@ -309,3 +309,32 @@ def save_aruco_info_to_csv(base_dir: str, image_index: int, aruco_data: list) ->
                          "Estimated 3D X", "Estimated 3D Y", "Estimated 3D Z",
                          "RealSense 3D X", "RealSense 3D Y", "RealSense 3D Z"])
         writer.writerows(aruco_data)
+
+def load_camera_parameters(parameter_dir: str) -> Tuple[bool, Optional[dict]]:
+    """
+    Load camera parameters from the specified directory.
+
+    Parameters
+    ----------
+    parameter_dir : str
+        Directory containing the camera parameters.
+
+    Returns
+    -------
+    Tuple[bool, Optional[dict]]
+        - True if loading is successful, False otherwise.
+        - Dictionary containing the camera parameters if successful, None otherwise.
+    """
+    try:
+        # Load parameters from JSON file
+        params_path = os.path.join(parameter_dir, "stereo_camera_parameters.json")
+        params = None
+
+        with open(params_path, 'r', encoding="utf-8") as file:
+            params = json.load(file)
+
+        return True, params
+
+    except FileNotFoundError:
+        logging.error("Calibration parameter file %s does not exist", params_path)
+        return False, None

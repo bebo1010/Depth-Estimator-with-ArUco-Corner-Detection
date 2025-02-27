@@ -14,7 +14,7 @@ from src.opencv_objects import ArUcoDetector, EpipolarLineDetector, ChessboardCa
 from src.camera_objects import TwoCamerasSystem
 from src.utils import get_starting_index, setup_directories, setup_logging, save_images, draw_lines, \
     apply_colormap, draw_aruco_rectangle, load_images_from_directory, update_aruco_info, \
-    save_setup_info, load_setup_info, save_aruco_info_to_csv
+    save_setup_info, load_setup_info, save_aruco_info_to_csv, load_camera_parameters
 
 class OpencvUIController():
     """
@@ -127,6 +127,14 @@ class OpencvUIController():
         self.camera_params['height'] = self.camera_system.get_height()
         save_setup_info(self.base_dir, self.camera_params)
 
+        parameter_dir = os.path.join("Db", f"{self.camera_params['system_prefix']}_calibration_parameter")
+        success, stereo_params = \
+            load_camera_parameters(parameter_dir)
+        if success:
+            self.chessboard_calibrator.stereo_camera_parameters = stereo_params
+            self.chessboard_calibrator.initialize_rectification_maps((self.camera_params['width'],
+                                                                      self.camera_params['height']))
+
     def start(self) -> None:
         """
         Initialize the OpenCV window and enter a loop to continuously capture and process images.
@@ -150,11 +158,17 @@ class OpencvUIController():
                     if not success:
                         continue
 
-                if self.epipolar_detector.homography_ready:
-                    left_gray_image = cv2.warpPerspective(left_gray_image, self.epipolar_detector.homography_left,
-                                                          (left_gray_image.shape[1], left_gray_image.shape[0]))
-                    right_gray_image = cv2.warpPerspective(right_gray_image, self.epipolar_detector.homography_right,
-                                                           (right_gray_image.shape[1], right_gray_image.shape[0]))
+                    if self.chessboard_calibrator.rectification_ready:
+                        left_gray_image, right_gray_image = \
+                            self.chessboard_calibrator.rectify_images(left_gray_image, right_gray_image)
+
+                    elif self.epipolar_detector.homography_ready:
+                        left_gray_image = cv2.warpPerspective(left_gray_image,
+                                                              self.epipolar_detector.homography_left,
+                                                            (left_gray_image.shape[1], left_gray_image.shape[0]))
+                        right_gray_image = cv2.warpPerspective(right_gray_image,
+                                                               self.epipolar_detector.homography_right,
+                                                            (right_gray_image.shape[1], right_gray_image.shape[0]))
 
                 if self.display_option['calibration_mode']:
                     self._process_and_draw_chessboard(left_gray_image, right_gray_image)
@@ -187,7 +201,7 @@ class OpencvUIController():
                                                                          image_size)
             if success:
                 logging.info("Stereo camera calibration successful.")
-                self.chessboard_calibrator.save_parameters(self.base_dir)
+                self.chessboard_calibrator.save_parameters("./", self.camera_params['system_prefix'])
 
         else:
             logging.warning("No chessboard images saved for calibration.")
@@ -578,7 +592,8 @@ class OpencvUIController():
 
             logging.info("Marker ID: %d, Calculated Depth: %.2f mm, Depth Image Depth: %s mm, "
                          "Mean Disparity: %.2f, Variance: %.2f, Disparities: %s",
-                         marker_id, np.mean(estimated_depth_mm), np.mean(realsense_depth_mm),
+                         marker_id, np.mean(estimated_depth_mm),
+                         np.mean(realsense_depth_mm) if realsense_depth_mm is not None else None,
                          mean_disparity, variance_disparity, disparities.tolist())
 
             aruco_info += update_aruco_info(marker_id,

@@ -23,7 +23,26 @@ extensions = [
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-
+# -- Options for latex output ----------------------------
+latex_engine = "xelatex"
+latex_use_xindy = False
+latex_elements = {
+    'papersize': 'a4paper',
+    'pointsize': '10pt',
+    'preamble': r'''
+    \usepackage{xeCJK}  % 支援中文
+    \setCJKmainfont[BoldFont=Microsoft JhengHei, ItalicFont=Microsoft JhengHei]{Microsoft JhengHei}
+    \setCJKsansfont{Microsoft JhengHei}
+    \setCJKmonofont{Microsoft JhengHei}
+    \usepackage[utf8]{inputenc}
+    \usepackage{geometry}
+    \geometry{a4paper, margin=2.5cm}  % 調整邊距
+    \usepackage[breakall]{truncate}  % 自動斷行
+    \usepackage{longtable}  % 支援長表
+    \usepackage{booktabs}  % 改進表格樣式（可選）
+    \usepackage[columns=1]{idxlayout}\makeindex
+    ''',
+}
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

@@ -2,6 +2,8 @@
 Module for calibrating cameras using a chessboard pattern.
 """
 
+import os
+from datetime import datetime
 import logging
 from typing import Tuple, List, Dict, Any
 
@@ -25,6 +27,13 @@ class ChessboardCalibrator():
         self._right_calibration_parameters: Dict[str, Any] = {}
         self._stereo_calibration_parameters: Dict[str, Any] = {}
 
+        self.rectification_ready = False
+        self.rectify_undistort_maps: Dict[str, Any] = {
+            "mapx_left": None,
+            "mapy_left": None,
+            "mapx_right": None,
+            "mapy_right": None
+        }
         logging.info("ChessboardCalibrator initialized with pattern size %s and square size mm %s.",
                         pattern_size, square_size_mm)
 
@@ -357,23 +366,14 @@ class ChessboardCalibrator():
             Rectified images from the left and right cameras.
         """
         logging.info("Rectifying stereo images.")
-        left_map1, left_map2 = cv2.initUndistortRectifyMap(
-            self._stereo_calibration_parameters["camera_matrix_left"],
-            self._stereo_calibration_parameters["distortion_coefficients_left"],
-            self._stereo_calibration_parameters["left_rectified_rotation_matrix"],
-            self._stereo_calibration_parameters["left_projection_matrix"],
-            left_image.shape[:2][::-1],
-            cv2.CV_16SC2
-        )
+        if not np.all([map is not None for map in self.rectify_undistort_maps.values()]):
+            self.initialize_rectification_maps((left_image.shape[1], left_image.shape[0]))
 
-        right_map1, right_map2 = cv2.initUndistortRectifyMap(
-            self._stereo_calibration_parameters["camera_matrix_right"],
-            self._stereo_calibration_parameters["distortion_coefficients_right"],
-            self._stereo_calibration_parameters["right_rectified_rotation_matrix"],
-            self._stereo_calibration_parameters["right_projection_matrix"],
-            right_image.shape[:2][::-1],
-            cv2.CV_16SC2
-        )
+        left_map1 = self.rectify_undistort_maps["mapx_left"]
+        left_map2 = self.rectify_undistort_maps["mapy_left"]
+
+        right_map1 = self.rectify_undistort_maps["mapx_right"]
+        right_map2 = self.rectify_undistort_maps["mapy_right"]
 
         left_rectified = cv2.remap(left_image, left_map1, left_map2, cv2.INTER_LINEAR)
         right_rectified = cv2.remap(right_image, right_map1, right_map2, cv2.INTER_LINEAR)
@@ -381,32 +381,85 @@ class ChessboardCalibrator():
         logging.info("Stereo images rectified.")
         return left_rectified, right_rectified
 
-    def save_parameters(self, db_path: str = "./") -> None:
+    def save_parameters(self, db_path: str = "./", system_prefix = "GH3") -> None:
+
         """
         Save the calibration parameters to JSON files.
 
         Parameters
         ----------
         db_path : str, optional
-            Directory path to save the JSON files.
+            Directory path to save the JSON files. Default is the current directory.
+
+        system_prefix : str, optional
+            Prefix for the directory name where the JSON files will be saved. Default is "GH3".
+
+        Raises
+        ------
+        TypeError
+            If an object in the calibration parameters is not JSON serializable.
         """
-        left_parameter_save_path = db_path + "/left_camera_parameters.json"
-        right_parameter_save_path = db_path + "/right_camera_parameters.json"
-        stereo_parameter_save_path = db_path + "/stereo_camera_parameters.json"
+        dir_path = os.path.join(db_path, f"{system_prefix}_calibration_parameter_{datetime.now().strftime('%Y%m%d')}")
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        left_parameter_save_path = os.path.join(dir_path, "left_camera_parameters.json")
+        right_parameter_save_path = os.path.join(dir_path, "right_camera_parameters.json")
+        stereo_parameter_save_path = os.path.join(dir_path, "stereo_camera_parameters.json")
 
         def serialize_numpy(obj: Any) -> Any:
             if isinstance(obj, np.ndarray):
                 return obj.tolist()
             raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
-        with open(left_parameter_save_path, "w", encoding="UTF-8") as left_file:
+        with open(left_parameter_save_path, "w", encoding="utf-8") as left_file:
             json.dump(self._left_calibration_parameters, left_file, default=serialize_numpy)
 
-        with open(right_parameter_save_path, "w", encoding="UTF-8") as right_file:
+        with open(right_parameter_save_path, "w", encoding="utf-8") as right_file:
             json.dump(self._right_calibration_parameters, right_file, default=serialize_numpy)
 
-        with open(stereo_parameter_save_path, "w", encoding="UTF-8") as stereo_file:
+        with open(stereo_parameter_save_path, "w", encoding="utf-8") as stereo_file:
             json.dump(self._stereo_calibration_parameters, stereo_file, default=serialize_numpy)
+
+    def initialize_rectification_maps(self, image_size: Tuple[int, int]) -> None:
+        """
+        Initialize rectification maps for the stereo camera setup.
+
+        Parameters
+        ----------
+        image_size : Tuple[int, int]
+            Size of the image.
+        """
+        if len(self._stereo_calibration_parameters.keys()) > 0:
+            left_map1, left_map2 = cv2.initUndistortRectifyMap(
+                np.array(self._stereo_calibration_parameters["camera_matrix_left"]),
+                np.array(self._stereo_calibration_parameters["distortion_coefficients_left"]),
+                np.array(self._stereo_calibration_parameters["left_rectified_rotation_matrix"]),
+                np.array(self._stereo_calibration_parameters["left_projection_matrix"]),
+                image_size,
+                cv2.CV_32FC1
+            )
+
+            right_map1, right_map2 = cv2.initUndistortRectifyMap(
+                np.array(self._stereo_calibration_parameters["camera_matrix_right"]),
+                np.array(self._stereo_calibration_parameters["distortion_coefficients_right"]),
+                np.array(self._stereo_calibration_parameters["right_rectified_rotation_matrix"]),
+                np.array(self._stereo_calibration_parameters["right_projection_matrix"]),
+                image_size,
+                cv2.CV_32FC1
+            )
+
+            self.rectify_undistort_maps = {
+                "mapx_left": left_map1,
+                "mapy_left": left_map2,
+                "mapx_right": right_map1,
+                "mapy_right": right_map2
+            }
+            logging.info("Rectification maps initialized.")
+            self.rectification_ready = True
+            return
+
+        logging.error("Stereo camera parameters not set. Cannot initialize rectification maps.")
 
     def _generate_object_points(self, num_images: int) -> List[np.ndarray]:
         """

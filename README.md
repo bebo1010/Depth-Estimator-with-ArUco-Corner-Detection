@@ -65,14 +65,14 @@
         - [x] Mouse hover 3D position
 - [ ] Chessboard calibration for stereo camera
     - [x] Calibration and save image
-    - [ ] Load back the parameters and rectify the images
+    - [x] Load back the parameters and rectify the images
     - [ ] (Optional) Show reprojection error per image
 - [x] Auto rectification with fundamental matrix
 - [x] Saving the images
     - [x] Also save the detected points in disk
 - [x] Load back the saved images
     - [x] Include camera parameters like focal length, baseline, etc
-- [x] Unit Tests
+- [ ] Unit Tests
     - [x] ArUco detector
     - [x] Camera systems (not possible for FLIR cameras)
     - [x] Utility functions
@@ -80,6 +80,7 @@
     - [x] Chessboard Calibration
     - [x] File utility functions
     - [x] Display utility functions
+    - [ ] Need to review all the unit tests at some time
 
 ### buttons for opencv_ui_controller.py
 
@@ -98,8 +99,7 @@
 - `esc` to close program
 
 ## Goal
-- Allow loading back calibration parameters.
-- Add rectifying image and show epipolar lines again.
+- Finish auto document
 
 ## Auto Document Generating
 
@@ -107,10 +107,24 @@
     ```bash
     pip install -e .[doc]
     ```
+    - Generate ReStructured text files (One time only)
+    ```bash
+    sphinx-apidoc -o . ../src
+    ```
 
-2. Build the html pages
+2. Build the document pages
+    - HTML
     ```bash
     sphinx-build -b html docs docs/_build/html
+    ```
+
+    - PDF file
+    1. Install [Strawberry Perl](https://strawberryperl.com/) manually
+    2. Install [MikTex](https://miktex.org/download)
+    3. Check updates and install `latexmk` in `Miktex Console`
+    ```bash
+    cd docs
+    make.bat latexpdf
     ```
 
 3. Run local documentation server
