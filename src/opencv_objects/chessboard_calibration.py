@@ -477,4 +477,5 @@ class ChessboardCalibrator():
         """
         objp = np.zeros((self.pattern_size[0] * self.pattern_size[1], 3), np.float32)
         objp[:, :2] = np.mgrid[0:self.pattern_size[0], 0:self.pattern_size[1]].T.reshape(-1, 2)
+        objp *= self._square_size_mm
         return [objp for _ in range(num_images)]
