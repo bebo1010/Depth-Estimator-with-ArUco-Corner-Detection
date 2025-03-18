@@ -107,10 +107,17 @@
     ```bash
     pip install -e .[doc]
     ```
-    - Generate ReStructured text files (One time only)
-    ```bash
-    sphinx-apidoc -o . ../src
-    ```
+    - One time only
+        - Quick start the documentation structure
+        ```bash
+        sphinx-quickstart docs
+        ```
+        - Generate ReStructured text files
+        ```bash\
+        cd docs
+        sphinx-apidoc -o . ../src
+        cd ..
+        ```
 
 2. Build the document pages
     - HTML
