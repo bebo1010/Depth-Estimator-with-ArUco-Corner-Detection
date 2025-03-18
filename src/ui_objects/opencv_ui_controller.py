@@ -201,7 +201,7 @@ class OpencvUIController():
                                                                          image_size)
             if success:
                 logging.info("Stereo camera calibration successful.")
-                self.chessboard_calibrator.save_parameters("./", self.camera_params['system_prefix'])
+                self.chessboard_calibrator.save_parameters("./Db/", self.camera_params['system_prefix'])
 
         else:
             logging.warning("No chessboard images saved for calibration.")
