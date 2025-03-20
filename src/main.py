@@ -7,7 +7,6 @@ if __name__ == "__main__":
     import sys  # Add import for sys module
 
     from .ui_objects import OpencvUIController
-    from .camera_objects import RealsenseCameraSystem, DualRealsenseSystem, FlirCameraSystem, DualFlirSystem
 
     logging.disable(logging.CRITICAL)  # Suppress log messages below CRITICAL level
 
@@ -38,6 +37,7 @@ if __name__ == "__main__":
     try:
         # try to import realsense SDK
         import pyrealsense2 as rs
+        from .camera_objects import RealsenseCameraSystem, DualRealsenseSystem
 
         # Try to detect dual Realsense cameras
         try:
@@ -56,7 +56,7 @@ if __name__ == "__main__":
                 camera2 = RealsenseCameraSystem(WIDTH, HEIGHT,
                                                 connected_devices[1].get_info(rs.camera_info.serial_number))
                 cameras = DualRealsenseSystem(camera1, camera2)
-                start_ui_with_camera_system(ui_controller, cameras, "Realsense_D415",
+                start_ui_with_camera_system(ui_controller, cameras, "Dual_Realsense_D415",
                                             FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
                 sys.exit()  # Use sys.exit() instead of exit()
         except SystemExit:
@@ -68,21 +68,21 @@ if __name__ == "__main__":
         try:
             if len(connected_devices) >= 1:
                 # D415
-                # FOCAL_LENGTH = 908.36  # in pixels
-                # BASELINE = 55  # in mm
-                # WIDTH = 1280
-                # HEIGHT = 720
-                # PRINCIPAL_POINT = (614.695, 354.577)  # in pixels
+                FOCAL_LENGTH = 908.36  # in pixels
+                BASELINE = 55  # in mm
+                WIDTH = 1280
+                HEIGHT = 720
+                PRINCIPAL_POINT = (614.695, 354.577)  # in pixels
 
                 # D435
-                FOCAL_LENGTH = 425.57  # in pixels
-                BASELINE = 50  # in mm
-                WIDTH = 848
-                HEIGHT = 480
-                PRINCIPAL_POINT = (428.448, 229.037)  # in pixels
+                # FOCAL_LENGTH = 425.57  # in pixels
+                # BASELINE = 50  # in mm
+                # WIDTH = 848
+                # HEIGHT = 480
+                # PRINCIPAL_POINT = (428.448, 229.037)  # in pixels
 
                 cameras = RealsenseCameraSystem(width=WIDTH, height=HEIGHT)
-                start_ui_with_camera_system(ui_controller, cameras, "Realsense_D435",
+                start_ui_with_camera_system(ui_controller, cameras, "Single_Realsense_D415",
                                             FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
                 sys.exit()  # Use sys.exit() instead of exit()
         except SystemExit:
@@ -97,8 +97,9 @@ if __name__ == "__main__":
     # Try to detect FLIR cameras
     try:
         import PySpin  # pylint: disable=unused-import
+        from .camera_objects import FlirCameraSystem, DualFlirSystem
 
-        FOCAL_LENGTH = 1075  # in pixels
+        FOCAL_LENGTH = 1072  # in pixels
         BASELINE = 80  # in mm
         PRINCIPAL_POINT = (945.68, 548.12)  # unchecked in pixels
 
@@ -108,7 +109,7 @@ if __name__ == "__main__":
 
         camera1 = FlirCameraSystem(CONFIG, SN1)
         camera2 = FlirCameraSystem(CONFIG, SN2)
-        cameras = DualFlirSystem(camera1, camera2)
+        cameras = DualFlirSystem(camera1, camera2, synchronized=True)
         start_ui_with_camera_system(ui_controller, cameras, "GH3", FOCAL_LENGTH, BASELINE, PRINCIPAL_POINT)
         sys.exit()  # Use sys.exit() instead of exit()
 
