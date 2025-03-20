@@ -12,7 +12,7 @@ class DualFlirSystem(TwoCamerasSystem):
     """
     Dual FLIR camera system, inherited from TwoCamerasSystem.
     """
-    def __init__(self, camera1: FlirCameraSystem, camera2: FlirCameraSystem) -> None:
+    def __init__(self, camera1: FlirCameraSystem, camera2: FlirCameraSystem, synchronized: bool = True) -> None:
         """
         Initialize dual FLIR camera system.
 
@@ -22,6 +22,8 @@ class DualFlirSystem(TwoCamerasSystem):
             First FLIR camera system.
         camera2 : FlirCameraSystem
             Second FLIR camera system.
+        synchronized : bool, optional
+            Should the cameras be synchronized or not, default is True
 
         Returns
         -------
@@ -32,10 +34,11 @@ class DualFlirSystem(TwoCamerasSystem):
         self.camera1 = camera1
         self.camera2 = camera2
 
-        self.camera1.configure_gpio_primary()
-        self.camera2.configure_gpio_secondary()
+        if synchronized:
+            self.camera1.configure_gpio_primary()
+            self.camera2.configure_gpio_secondary()
 
-        self.camera1.disable_trigger_mode()
+            self.camera1.disable_trigger_mode()
 
         self.width = camera1.get_width()
         self.height = camera1.get_height()
