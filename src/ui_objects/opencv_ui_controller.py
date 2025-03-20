@@ -841,8 +841,8 @@ class OpencvUIController():
 
         left_image = cv2.imread(left_image_path, cv2.IMREAD_GRAYSCALE)
         right_image = cv2.imread(right_image_path, cv2.IMREAD_GRAYSCALE)
-        left_depth_image = np.load(left_depth_image_path) if left_depth_image_path else np.zeros_like(left_image)
-        right_depth_image = np.load(right_depth_image_path) if right_depth_image_path else np.zeros_like(right_image)
+        left_depth_image = np.load(left_depth_image_path) if left_depth_image_path else None
+        right_depth_image = np.load(right_depth_image_path) if right_depth_image_path else None
 
         if left_image is None or right_image is None:
             QMessageBox.critical(None, "Error", "Failed to load images.")
